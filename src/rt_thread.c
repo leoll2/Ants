@@ -116,26 +116,67 @@ int init_sched_attr(pthread_attr_t *attr, int policy, int prio) {
 }
 
 
+void set_activation(task_par *tp) {
+
+	struct timespec t;
+
+	pthread_mutex_lock(&tp->mtx);
+	clock_gettime(CLOCK_MONOTONIC, &t);
+	time_copy(&(tp->at), t);
+	time_copy(&(tp->dl), t);
+	time_add_ms(&(tp->at), tp->period);
+	time_add_ms(&(tp->dl), tp->deadline);
+	pthread_mutex_unlock(&tp->mtx);
+}
+
+
+bool missed_deadline(task_par *tp) {
+
+	struct timespec now;
+
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	if (time_cmp(now, tp->dl) > 0) {
+		++tp->dl_missed;
+		return true;
+	}
+	return false;
+}
+
+
+void wait_next_activation(task_par *tp) {
+
+	clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &(tp->at), NULL);
+	time_add_ms(&(tp->at), tp->period);
+	time_add_ms(&(tp->dl), tp->period);
+}
+
+
 void *rt_thr_body(void *arg) {
 
-	struct timespec dt;
-
+	struct timespec t;
 	task_par *tp = (task_par *)arg;
-	/* INITIALIZATION TIMINGS*/
+
+	set_activation(tp);
 
 	while (true) {
 		pthread_mutex_lock(&tp->mtx);
+
+		// Stop the thread if requested
 		if (tp->stopped) {
 			pthread_mutex_unlock(&tp->mtx);
 			break;
 		}
+		// Execute the instance-specific code
 		tp->behaviour(tp->data);
-		/* CHECK DEADLINE MISS */
+
+		// Check for deadline miss
+		if (missed_deadline(tp))
+			printf("Deadline missed. Total for this thread: %d\n", tp->dl_missed);
+
 		pthread_mutex_unlock(&tp->mtx);
 
-		dt.tv_sec = 0;
-		dt.tv_nsec = 800*1000000;
-		clock_nanosleep(CLOCK_MONOTONIC, 0, &dt, NULL);
+		// Sleep until next activation
+		wait_next_activation(tp);
 	}
 	printf("Shutting down a thread\n");
 	return NULL;
@@ -174,7 +215,7 @@ int start_thread(
 	tp->deadline = dl;
 	tp->priority = prio;
 	tp->stopped = false;
-	tp->dmiss = 0;
+	tp->dl_missed = 0;
 
 	ret = init_sched_attr(&attr, policy, prio);
 	if (ret) {

@@ -19,7 +19,7 @@ typedef struct task_par {
 	int period; 		// period (ms)
 	int deadline; 		// relative deadline (ms)
 	int priority; 		// priority [0,99]
-	int dmiss; 			// no. of deadline misses
+	int dl_missed;		// no. of deadline misses
 	bool stopped;		// thread was ordered to stop
 	struct timespec at; // next activ. time
 	struct timespec dl; // abs. deadline
