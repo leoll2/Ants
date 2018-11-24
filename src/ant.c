@@ -1,21 +1,22 @@
-#include <errno.h>
-#include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 
 #include "ant.h"
 
-uint8_t stop = 0;
+ant ants[POP_SIZE_MAX];
 uint8_t n_ants = 0;
 
 
 void *ant_behaviour(void *arg) {
 
-	struct timespec dt;
-
 	ant *a = (ant *)arg;
 
-	printf("Running ant %d\n", a->id);
+	pthread_mutex_lock(&a->mtx);
+
+	a->pos.x = rand()%640;
+	a->pos.y = rand()%480;
+	//printf("Running ant %d\n", a->id);
+
+	pthread_mutex_unlock(&a->mtx);
 }
 
 
@@ -24,16 +25,27 @@ int spawn_ants(unsigned int n) {
 
 	int id;
 
+	// clear the alive flag of all ants and init mutex
 	for (int i = 0; i < n; ++i) {
+		pthread_mutex_init(&ants[i].mtx, NULL);
+		ants[i].alive = false;
+	}
+
+	for (int i = 0; i < n; ++i) {
+		pthread_mutex_lock(&ants[i].mtx);
 		id = start_thread(ant_behaviour, &ants[i], SCHED_FIFO, WCET_ANTS, PRD_ANTS, DL_ANTS, PRIO_ANTS);
 		if (id < 0) {
+			pthread_mutex_unlock(&ants[i].mtx);
 			printf("Failed to instantiate ant #%d\n", i);
 			return 1;
 		} else {
+			ants[i].alive = true;
 			ants[i].id = (unsigned int)id;
+			ants[i].pos.x = ants[i].pos.y = ants[i].pos.angle = 0;
+			pthread_mutex_unlock(&ants[i].mtx);
+			++n_ants;	// TODO: ADD LOCK
 			printf("Created ant #%d with id %d\n", i, id);
 		}
-		++n_ants;	// TODO: ADD LOCK
 	}
 
 	return 0;
@@ -43,18 +55,18 @@ int spawn_ants(unsigned int n) {
 void kill_ants(void) {
 
 
-	printf("Start killing \n");
+	printf("Start killing ants \n");
 
 	int iter = n_ants;
 
 	for (int i = 0; i < iter; ++i) {
 		stop_thread(ants[i].id);
+		ants[i].alive = false;
 		--n_ants;	// TODO: ADD LOCK
-		printf("One stopped!\n");
 	}
 
 	if (n_ants > 0)
 		printf("For some reason %d ants remained alive\n", n_ants);
 
-	printf("Finished killing \n");
+	printf("Finished killing ants \n");
 }

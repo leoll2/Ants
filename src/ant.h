@@ -2,6 +2,8 @@
 #define ANT_H
 
 #include <pthread.h>
+#include <stdint.h>
+#include <stdlib.h>
 
 #include "conf/ants.h"
 #include "rt_thread.h"
@@ -14,16 +16,18 @@ typedef struct position {
 
 
 typedef struct ant {
-	position pos;
+	bool alive;
 	unsigned int id;	// TODO: useful to be killed
+	position pos;
+	pthread_mutex_t mtx;
 } ant;
 
-ant ants[POP_SIZE_MAX];
 
+extern ant ants[POP_SIZE_MAX];
+extern uint8_t n_ants;
 
 
 void *ant_behaviour(void *arg);
-
 
 int spawn_ants(unsigned int n_ants);
 
