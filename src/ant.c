@@ -6,37 +6,32 @@
 #include "ant.h"
 
 uint8_t stop = 0;
-
 uint8_t n_ants = 0;
 
 
-void *ant_behaviour(void *container) {
+void *ant_behaviour(void *arg) {
 
 	struct timespec dt;
 
-	ant *a = (ant *)container;
+	ant *a = (ant *)arg;
 
-	while(!a->thr.stopped) {
-		printf("Thread: %d  x: %d  y: %d  stopped: %d\n", pthread_self(), a->pos.x, a->pos.y, a->thr.stopped);
-		/*dt.tv_sec = 2;
-		dt.tv_nsec = 0;
-		clock_nanosleep(CLOCK_MONOTONIC, 0, &dt, NULL);*/
-	}
-
-	printf("Stopping thread %d \n", pthread_self());
+	printf("Running ant %d\n", a->id);
 }
 
 
 
-int spawn_ants(unsigned int n_ants) {
+int spawn_ants(unsigned int n) {
 
-	int ret;
+	int id;
 
-	for (int i = 0; i < POP_MAX; ++i) {
-		ret = start_thread(ant_behaviour, &ants[i], &ants[i].thr, SCHED_FIFO, 50, 100, 80, 25);
-		if (ret) {
-			printf("Failed to instantiate ant #%d (error: %d)\n", i, ret);
+	for (int i = 0; i < n; ++i) {
+		id = start_thread(ant_behaviour, &ants[i], SCHED_FIFO, WCET_ANTS, PRD_ANTS, DL_ANTS, PRIO_ANTS);
+		if (id < 0) {
+			printf("Failed to instantiate ant #%d\n", i);
 			return 1;
+		} else {
+			ants[i].id = (unsigned int)id;
+			printf("Created ant #%d with id %d\n", i, id);
 		}
 		++n_ants;	// TODO: ADD LOCK
 	}
@@ -49,11 +44,11 @@ void kill_ants(void) {
 
 
 	printf("Start killing \n");
-	exit(5);
 
-	for (int i = 0; i < n_ants; ++i) {
-		ants[i].thr.stopped = 1;
-		pthread_join(ants[i].thr.tid, NULL);
+	int iter = n_ants;
+
+	for (int i = 0; i < iter; ++i) {
+		stop_thread(ants[i].id);
 		--n_ants;	// TODO: ADD LOCK
 	}
 

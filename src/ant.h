@@ -3,7 +3,7 @@
 
 #include <pthread.h>
 
-#include "conf/population.h"
+#include "conf/ants.h"
 #include "rt_thread.h"
 
 typedef struct position {
@@ -15,14 +15,14 @@ typedef struct position {
 
 typedef struct ant {
 	position pos;
-	task_par thr;
+	unsigned int id;	// TODO: useful to be killed
 } ant;
 
-ant ants[POP_MAX];
+ant ants[POP_SIZE_MAX];
 
 
 
-void *ant_behaviour(void *p);
+void *ant_behaviour(void *arg);
 
 
 int spawn_ants(unsigned int n_ants);
