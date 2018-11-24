@@ -3,14 +3,24 @@
 
 #include <pthread.h>
 
-struct state {
+#include "conf/population.h"
+#include "rt_thread.h"
+
+typedef struct position {
 	uint16_t x;
 	uint16_t y;
 	float angle;
-};
+} position;
 
 
-pthread_t ant1, ant2;
+typedef struct ant {
+	position pos;
+	task_par thr;
+} ant;
+
+ant ants[POP_MAX];
+
+
 
 void *ant_behaviour(void *p);
 

@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -g -O2
 ALLEG = `allegro-config --libs`
-CONF = -Iconf
+CONF = -I.
 PTHREAD = -lpthread -lrt
 
 .PHONY: all clean
@@ -18,22 +18,26 @@ clean:
 ################
 
 build/ant.o: src/ant.c
-	$(CC) $(CONF) -c src/ant.c -o build/ant.o
+	$(CC) -c $(CONF) src/ant.c -o build/ant.o
 
 build/main.o: src/main.c
-	$(CC) $(CONF) -c src/main.c -o build/main.o
+	$(CC) -c $(CONF) src/main.c -o build/main.o
 
 build/multimedia.o: src/multimedia.c
-	$(CC) $(CONF) -c src/multimedia.c -o build/multimedia.o
+	$(CC) -c $(CONF) src/multimedia.c -o build/multimedia.o
+
+build/rt_thread.o: src/rt_thread.c
+	$(CC) -c $(CONF) src/rt_thread.c -o build/rt_thread.o
 
 
 ################
 # Executables  #
 ################
 
-main: build/main.o build/ant.o build/multimedia.o
+main: build/main.o build/ant.o build/multimedia.o build/rt_thread.o
 	$(CC) $(ALLEG) $(PTHREAD) \
 	build/main.o \
 	build/ant.o \
 	build/multimedia.o \
+	build/rt_thread.o \
 	-o bin/main

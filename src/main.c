@@ -1,9 +1,10 @@
 #include <allegro.h>
+#include <stdio.h>
 
 #include "ant.h"
 #include "multimedia.h"
 
-int main() {
+int main(int argc, char **argv) {
 
     if (init_allegro())
         return 1;
@@ -11,6 +12,7 @@ int main() {
     spawn_ants(8);
 
     while (!keypressed()) {
+        printf("Resting\n");
         rest(50);
     }
 
