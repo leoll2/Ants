@@ -50,6 +50,7 @@ void kill_ants(void) {
 	for (int i = 0; i < iter; ++i) {
 		stop_thread(ants[i].id);
 		--n_ants;	// TODO: ADD LOCK
+		printf("One stopped!\n");
 	}
 
 	if (n_ants > 0)

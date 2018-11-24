@@ -13,11 +13,14 @@ int main(int argc, char **argv) {
     init_rt_thread_manager();
 
     spawn_ants(8);
+    printf("Ants spawned\n");
 
-    while (!keypressed()) {
-        printf("Resting\n");
-        rest(50);
-    }
+    /*while (!keypressed()) {
+        printf("Restuing\n");
+        rest(2000);
+    }*/
+
+    int k = readkey();
 
     kill_ants();
 

@@ -118,6 +118,8 @@ int init_sched_attr(pthread_attr_t *attr, int policy, int prio) {
 
 void *rt_thr_body(void *arg) {
 
+	struct timespec dt;
+
 	task_par *tp = (task_par *)arg;
 	/* INITIALIZATION TIMINGS*/
 
@@ -130,6 +132,10 @@ void *rt_thr_body(void *arg) {
 		tp->behaviour(tp->data);
 		/* CHECK DEADLINE MISS */
 		pthread_mutex_unlock(&tp->mtx);
+
+		dt.tv_sec = 0;
+		dt.tv_nsec = 800*1000000;
+		clock_nanosleep(CLOCK_MONOTONIC, 0, &dt, NULL);
 	}
 	printf("Shutting down a thread\n");
 	return NULL;
