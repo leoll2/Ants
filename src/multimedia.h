@@ -1,6 +1,15 @@
 #ifndef MULTIMEDIA_H
 #define MULTIMEDIA_H
 
-unsigned int init_allegro();
+#include "ant.h"
+#include "conf/multimedia.h"
+#include "rt_thread.h"
+
+
+unsigned int start_graphics();
+
+void stop_graphics();
+
+void *graphics_behaviour(void *arg);
 
 #endif
