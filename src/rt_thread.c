@@ -155,6 +155,7 @@ void *rt_thr_body(void *arg) {
 
 	struct timespec t;
 	task_par *tp = (task_par *)arg;
+	int tid = tp - rt_threads;
 
 	set_activation(tp);
 
@@ -178,7 +179,7 @@ void *rt_thr_body(void *arg) {
 		// Sleep until next activation
 		wait_next_activation(tp);
 	}
-	printf("Shutting down a thread\n");
+	printf("Shutting down thread with id #%d\n", tid);
 	return NULL;
 }
 
