@@ -8,7 +8,7 @@
 
 
 #define WCET_GRAPHICS		60
-#define PRD_GRAPHICS		100
+#define PRD_GRAPHICS		500
 #define DL_GRAPHICS			80
 #define PRIO_GRAPHICS		30
 
