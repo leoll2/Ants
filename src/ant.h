@@ -25,6 +25,7 @@ typedef struct ant {
 
 extern ant ants[POP_SIZE_MAX];
 extern uint8_t n_ants;
+extern pthread_mutex_t ants_mtx;
 
 
 void *ant_behaviour(void *arg);

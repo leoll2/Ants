@@ -172,7 +172,7 @@ void *rt_thr_body(void *arg) {
 
 		// Check for deadline miss
 		if (missed_deadline(tp))
-			printf("Deadline missed. Total for this thread: %d\n", tp->dl_missed);
+			printf("Deadline missed by #%d. Total for this thread: %d\n", tid, tp->dl_missed);
 
 		pthread_mutex_unlock(&tp->mtx);
 
