@@ -12,9 +12,9 @@ int main(int argc, char **argv) {
 
     init_rt_thread_manager();
 
+    spawn_ants(8);
     if (start_graphics())
     	return 1;
-    spawn_ants(8);
 
     int k = readkey();
 

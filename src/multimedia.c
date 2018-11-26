@@ -1,4 +1,5 @@
 #include <allegro.h>
+#include <math.h>
 #include <pthread.h>
 #include <stdio.h>
 
@@ -8,6 +9,17 @@
 BITMAP* surface = NULL;
 unsigned int graphics_tid;
 
+
+/* Converts the format of an angle.:
+   From: [0, 2*PI) float counterclockwise origin positive x
+   To:   [0, 256)  uint  clockwise        origin positive y
+ */
+unsigned int angle_float_to_256(float angle) {
+
+    return (64 - (unsigned int)round(128 * (angle / M_PI))) % 256;
+}
+
+
 unsigned int init_allegro() {
 
 	if (allegro_init()!=0)
@@ -16,7 +28,7 @@ unsigned int init_allegro() {
     install_keyboard();
 
     set_color_depth(32);
-    if (set_gfx_mode(GFX_AUTODETECT_WINDOWED, 640, 480, 0, 0) !=0 ) 
+    if (set_gfx_mode(GFX_AUTODETECT_WINDOWED, FIELD_WIDTH, FIELD_HEIGHT, 0, 0)) 
         return 2;
     surface = create_bitmap(SCREEN_W, SCREEN_H);
     
@@ -31,26 +43,24 @@ void *graphics_behaviour(void *arg) {
 
     BITMAP *antbmp;
     antbmp = load_bitmap("img/ant.bmp", NULL);
+    ant *a;
 
     clear_bitmap(surface);
     clear_to_color(surface, COLOR_GREEN);
 
-    pthread_mutex_lock(&ants_mtx);
-
     for (int i = 0; i < POP_SIZE_MAX; ++i) {
-        pthread_mutex_lock(&ants[i].mtx);
-        if (ants[i].alive) {    
+        a = &ants[i];
+        pthread_mutex_lock(&a->mtx);
+        if (a->alive) {    
             if (antbmp != NULL) {
-                rotate_sprite(surface, antbmp, (ants[i].pos.x - antbmp->w/2), 
-                        (ants[i].pos.y - antbmp->h/2), itofix(0));
-                //circle(surface, ants[i].pos.x, ants[i].pos.y, 8, COLOR_RED);
+                rotate_sprite(surface, antbmp, (a->pos.x - antbmp->w/2), 
+                        (a->pos.y - antbmp->h/2), itofix(angle_float_to_256(a->pos.angle)));
+                //circle(surface, a->pos.x, a->pos.y, 8, COLOR_RED);
             } else 
-                circlefill(surface, ants[i].pos.x, ants[i].pos.y, 5, COLOR_RED);  // fallback
+                circlefill(surface, a->pos.x, a->pos.y, 5, COLOR_RED);  // fallback
         }
-        pthread_mutex_unlock(&ants[i].mtx);
+        pthread_mutex_unlock(&a->mtx);
     }
-
-    pthread_mutex_unlock(&ants_mtx);
     
     blit(surface, screen, 0, 0, 0, 0, SCREEN_W, SCREEN_H);
 }

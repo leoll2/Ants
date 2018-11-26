@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Wall -g -O2
 ALLEG = `allegro-config --libs`
 CONF = -I.
-PTHREAD = -lpthread -lrt
+PTHREAD = -lpthread -lrt -lm
 
 .PHONY: all clean
 

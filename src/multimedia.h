@@ -2,6 +2,7 @@
 #define MULTIMEDIA_H
 
 #include "ant.h"
+#include "conf/field.h"
 #include "conf/multimedia.h"
 #include "rt_thread.h"
 

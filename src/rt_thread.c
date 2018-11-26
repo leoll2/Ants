@@ -9,14 +9,14 @@ unsigned int active_rt_threads = 0;
 pthread_mutex_t rt_threads_mtx = PTHREAD_MUTEX_INITIALIZER;
 
 
-void time_copy(struct timespec *dst, struct timespec src) {
+void time_copy(struct timespec *const dst, struct timespec src) {
 	
 	dst->tv_sec  = src.tv_sec;
 	dst->tv_nsec = src.tv_nsec;
 }
 
 
-void time_add_ms(struct timespec *t, int ms) {
+void time_add_ms(struct timespec *const t, int ms) {
 
 	t->tv_sec += ms/1000;
 	t->tv_nsec += (ms%1000)*1000000;
@@ -89,8 +89,16 @@ void deallocate_task_id(unsigned int id) {
 	pthread_mutex_unlock(&rt_threads_mtx);
 }
 
+
+/* Get the index of a task. */
+static inline int get_task_id(task_par *const tp) {
+
+	return tp - rt_threads;
+}
+
+
 /* Initialize pthread_attr_t structure */
-int init_sched_attr(pthread_attr_t *attr, int policy, int prio) {
+int init_sched_attr(pthread_attr_t *const attr, int policy, int prio) {
 
 	struct sched_param sp;
 	int err;
@@ -116,7 +124,7 @@ int init_sched_attr(pthread_attr_t *attr, int policy, int prio) {
 }
 
 
-void set_activation(task_par *tp) {
+void set_activation(task_par *const tp) {
 
 	struct timespec t;
 
@@ -130,7 +138,7 @@ void set_activation(task_par *tp) {
 }
 
 
-bool missed_deadline(task_par *tp) {
+bool missed_deadline(task_par *const tp) {
 
 	struct timespec now;
 
@@ -143,7 +151,7 @@ bool missed_deadline(task_par *tp) {
 }
 
 
-void wait_next_activation(task_par *tp) {
+void wait_next_activation(task_par *const tp) {
 
 	clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &(tp->at), NULL);
 	time_add_ms(&(tp->at), tp->period);
@@ -151,11 +159,11 @@ void wait_next_activation(task_par *tp) {
 }
 
 
-void *rt_thr_body(void *arg) {
+void *rt_thr_body(void *const arg) {
 
 	struct timespec t;
 	task_par *tp = (task_par *)arg;
-	int tid = tp - rt_threads;
+	int tid = get_task_id(tp);
 
 	set_activation(tp);
 

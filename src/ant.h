@@ -6,11 +6,12 @@
 #include <stdlib.h>
 
 #include "conf/ants.h"
+#include "conf/field.h"
 #include "rt_thread.h"
 
 typedef struct position {
-	uint16_t x;
-	uint16_t y;
+	int x;
+	int y;
 	float angle;
 } position;
 
