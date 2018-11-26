@@ -39,14 +39,19 @@ unsigned int init_allegro() {
 }
 
 
+void clear_to_background() {
+
+    surface = load_bitmap("img/dirt.bmp", NULL);
+}
+
+
 void *graphics_behaviour(void *arg) {
 
     BITMAP *antbmp;
     antbmp = load_bitmap("img/ant.bmp", NULL);
     ant *a;
 
-    clear_bitmap(surface);
-    clear_to_color(surface, COLOR_GREEN);
+    clear_to_background();
 
     for (int i = 0; i < POP_SIZE_MAX; ++i) {
         a = &ants[i];
