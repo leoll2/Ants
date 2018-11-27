@@ -29,8 +29,6 @@ extern uint8_t n_ants;
 extern pthread_mutex_t ants_mtx;
 
 
-void *ant_behaviour(void *arg);
-
 int spawn_ants(unsigned int n_ants);
 
 void kill_ants(void);

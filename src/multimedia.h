@@ -11,6 +11,4 @@ unsigned int start_graphics();
 
 void stop_graphics();
 
-void *graphics_behaviour(void *arg);
-
 #endif

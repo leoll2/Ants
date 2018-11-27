@@ -1,5 +1,5 @@
-#ifndef FIELD_H
-#define FIELD_H
+#ifndef CONF_FIELD_H
+#define CONF_FIELD_H
 
 
 #define FIELD_WIDTH	640	//(pixel)
