@@ -46,16 +46,30 @@ void clear_to_background() {
 }
 
 
+static inline unsigned int phero_radius(float value) {
+
+    return (unsigned int)ceil((CELL_SIZE / 2) * (value / SMELL_UB));
+}
+
+
 static inline void draw_pheromone(int i, int j) {
 
     pthread_mutex_lock(&ph[i][j].mtx);
 
-    circle(surface, 
-            i * CELL_SIZE + CELL_SIZE / 2, 
-            j * CELL_SIZE + CELL_SIZE / 2, 
-            CELL_SIZE / 2, 
-            COLOR_RED);
-
+    if (ph[i][j].food > 0) {
+        circle(surface, 
+                i * CELL_SIZE + CELL_SIZE / 2, 
+                j * CELL_SIZE + CELL_SIZE / 2, 
+                phero_radius(ph[i][j].food), 
+                COLOR_RED);
+    }
+    if (ph[i][j].home > 0) {
+        circle(surface, 
+                i * CELL_SIZE + CELL_SIZE / 2, 
+                j * CELL_SIZE + CELL_SIZE / 2, 
+                phero_radius(ph[i][j].home), 
+                COLOR_BLUE);
+    }
     pthread_mutex_unlock(&ph[i][j].mtx);
 }
 
@@ -70,7 +84,7 @@ static inline void draw_ant(BITMAP *antbmp, int i) {
             rotate_sprite(surface, antbmp, (a->pos.x - antbmp->w/2), 
                     (a->pos.y - antbmp->h/2), itofix(angle_float_to_256(a->pos.angle)));
         } else 
-            circlefill(surface, a->pos.x, a->pos.y, 5, COLOR_RED);  // fallback
+            circlefill(surface, a->pos.x, a->pos.y, CELL_SIZE / 2, COLOR_RED);  // fallback
     }
 
     pthread_mutex_unlock(&a->mtx);

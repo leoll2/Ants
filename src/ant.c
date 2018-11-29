@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #include "ant.h"
+#include "field.h"
 
 const float TWO_PI = 2 * M_PI;
 
@@ -53,7 +54,6 @@ void move_ant(ant *const a) {
 }
 
 
-
 void *ant_behaviour(void *arg) {
 
 	ant *const a = (ant *)arg;
@@ -62,7 +62,8 @@ void *ant_behaviour(void *arg) {
 
 	//move_ant_random(a);
 	move_ant(a);
-	//printf("Running ant %d\n", a->id);
+	deploy_pheromone(a->id, a->pos.x, a->pos.y, PHERO_FOOD);
+	deploy_pheromone(a->id, a->pos.x, a->pos.y, PHERO_HOME);
 
 	pthread_mutex_unlock(&a->mtx);
 }

@@ -7,15 +7,58 @@
 
 int tid;			// thread id
 
-pheromone ph[PH_SIZE_H][PH_SIZE_V];
+cell ph[PH_SIZE_H][PH_SIZE_V];
+
+
+void deploy_pheromone(unsigned int id, int x, int y, PHERO_T type) {
+
+	assert((x < FIELD_WIDTH) && (y < FIELD_HEIGHT));
+	assert((type == PHERO_HOME) || (type == PHERO_FOOD));
+
+	int i = x / CELL_SIZE;
+	int j = y / CELL_SIZE;
+
+	pthread_mutex_lock(&ph[i][j].mtx);
+
+	switch(type) {
+		case PHERO_FOOD:
+			if (ph[i][j].backoff_food == 0) {
+				ph[i][j].food += SMELL_UNIT;		// ADD HOME TOO!
+				if (ph[i][j].food > SMELL_UB)
+					ph[i][j].food = SMELL_UB;
+				ph[i][j].backoff_food = DEPLOY_BACKOFF;
+			}
+			break;
+		case PHERO_HOME:
+			if (ph[i][j].backoff_home == 0) {
+				ph[i][j].home += SMELL_UNIT;		// ADD HOME TOO!
+				if (ph[i][j].home > SMELL_UB)
+					ph[i][j].home = SMELL_UB;
+				ph[i][j].backoff_home = DEPLOY_BACKOFF;
+			}
+			break;
+		default:
+			printf("This should not happen! (unrecognized pheromone type)\n");
+	}
+	pthread_mutex_unlock(&ph[i][j].mtx);
+}
 
 
 static inline void phero_exp_decay(int i, int j) {
 
 	pthread_mutex_lock(&ph[i][j].mtx);
 
-    ph[i][j].food = 2.1;		// STUB
-    ph[i][j].home = 3.4;		// STUB
+	if (ph[i][j].backoff_home)
+		ph[i][j].backoff_home--;
+	if (ph[i][j].backoff_food)
+		ph[i][j].backoff_food--;
+
+    ph[i][j].food *= DECAY_FACTOR;
+    if (ph[i][j].food < SMELL_THRESH)
+    	ph[i][j].food = 0.0;
+    ph[i][j].home *= DECAY_FACTOR;
+    if (ph[i][j].home < SMELL_THRESH)
+    	ph[i][j].home = 0.0;
 
     pthread_mutex_unlock(&ph[i][j].mtx);
 }
@@ -39,6 +82,7 @@ unsigned int start_pheromones() {
 		for (int j = 0; j < PH_SIZE_V; ++j) {
 			pthread_mutex_init(&ph[i][j].mtx, NULL);
 			ph[i][j].food = ph[i][j].home = 0.0;
+			ph[i][j].backoff_home = ph[i][j].backoff_food = 0;
 		}
 	}
 
