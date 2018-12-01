@@ -1,8 +1,15 @@
 #include <assert.h>
+#include <math.h>
 #include <pthread.h>
 #include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
 
 #include "field.h"
+
+
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))		// TODO: TO BE MOVED IN CONF/UTILS
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
 
 int tid;			// thread id
@@ -41,6 +48,67 @@ void deploy_pheromone(unsigned int id, int x, int y, PHERO_T type) {
 			printf("This should not happen! (unrecognized pheromone type)\n");
 	}
 	pthread_mutex_unlock(&ph[i][j].mtx);
+}
+
+
+/* x and y are pixel coordinates, radius is cell-sized coordinate
+*  Return: best_x in the most significant 16 bits, best_y in the least significant ones.
+*/
+uint32_t find_smell_direction(int x, int y, int orientation, int radius, SCAN_MODE_T mode, PHERO_T type) {
+
+	assert((x < FIELD_WIDTH) && (y < FIELD_HEIGHT));
+	assert((type == PHERO_HOME) || (type == PHERO_FOOD));
+	assert((mode == SCAN_ALL)   || (mode == SCAN_FORWARD));
+
+	int cell_i = x / CELL_SIZE;
+	int cell_j = y / CELL_SIZE;
+
+	int i = MAX(cell_i - radius, 0);
+	int j = MAX(cell_j - radius, 0);
+	const int i_max = MIN(cell_i + radius, PH_SIZE_H - 1);
+	const int j_max = MIN(cell_j + radius, PH_SIZE_V - 1);
+
+	long ph_best_i = cell_i;
+	long ph_best_j = cell_j;
+	pthread_mutex_lock(&ph[cell_i][cell_j].mtx);
+	float ph_best = (type == PHERO_FOOD) ? ph[cell_i][cell_j].food : ph[cell_i][cell_j].home;
+	pthread_mutex_unlock(&ph[cell_i][cell_j].mtx);
+
+	for (i; i < i_max; ++i) {
+		for (j; j < j_max; ++j) {
+			// Skip check if the cell is out of detection radius
+			if (hypot(cell_i - i, cell_j - i) > (double)radius)
+				continue;
+			// Skip check if SCAN_FORWARD and cell is out of the 180° detection arc
+			if (mode == SCAN_FORWARD) {
+				double cell_angle = atan2(cell_j - j, i - cell_i);
+				if (cos(cell_angle) * cos(orientation) + sin(cell_angle) * sin(orientation) < 0)
+					continue;
+			}
+			pthread_mutex_lock(&ph[i][j].mtx);
+			switch (type) {
+				case PHERO_FOOD:
+					if (ph[i][j].food > ph_best) {
+						ph_best_i = i;
+						ph_best_j = j;
+						ph_best = ph[i][j].food;
+					}
+					break;
+				case PHERO_HOME:
+					if (ph[i][j].home > ph_best) {
+						ph_best_i = i;
+						ph_best_j = j;
+						ph_best = ph[i][j].home;
+					}
+					break;
+				default:
+					printf("This should not happen! (unrecognized pheromone type)\n");
+			}
+			pthread_mutex_unlock(&ph[i][j].mtx);
+		}
+	}
+	return ((((CELL_SIZE / 2) + CELL_SIZE * ph_best_i) & 0xFFFF) << 16) +
+		    (((CELL_SIZE / 2) + CELL_SIZE * ph_best_j) & 0xFFFF);
 }
 
 

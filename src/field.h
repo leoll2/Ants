@@ -9,6 +9,10 @@
 #define PHERO_HOME		0
 #define PHERO_FOOD		1
 
+#define SCAN_MODE_T		unsigned int
+#define SCAN_ALL		0
+#define SCAN_FORWARD	1
+
 #define PH_SIZE_H 		(FIELD_WIDTH  / CELL_SIZE)
 #define PH_SIZE_V		(FIELD_HEIGHT / CELL_SIZE)
 
@@ -22,6 +26,8 @@ typedef struct cell {
 } cell;
 
 extern cell ph[PH_SIZE_H][PH_SIZE_V];
+
+uint32_t find_smell_direction(int x, int y, int orientation, int radius, SCAN_MODE_T mode, PHERO_T type);
 
 void deploy_pheromone(unsigned int id, int x, int y, PHERO_T type);
 
