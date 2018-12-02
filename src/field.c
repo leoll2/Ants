@@ -21,7 +21,7 @@ void deploy_pheromone(unsigned int id, int x, int y, phero_type type, float valu
 
 	assert((x < FIELD_WIDTH) && (y < FIELD_HEIGHT));
 	assert((type == HOME) || (type == FOOD));
-	assert(value >= 0);
+	assert((value >= 0) && (value <= SMELL_UNIT));
 
 	if (value < SMELL_THRESH)
 		return;
@@ -35,16 +35,12 @@ void deploy_pheromone(unsigned int id, int x, int y, phero_type type, float valu
 		case FOOD:
 			if (ph[i][j].backoff_food == 0) {
 				ph[i][j].food = MAX(ph[i][j].food, value);
-				if (ph[i][j].food > SMELL_UB)
-					ph[i][j].food = SMELL_UB;
 				ph[i][j].backoff_food = DEPLOY_BACKOFF;
 			}
 			break;
 		case HOME:
 			if (ph[i][j].backoff_home == 0) {
 				ph[i][j].home = MAX(ph[i][j].home, value);
-				if (ph[i][j].home > SMELL_UB)
-					ph[i][j].home = SMELL_UB;
 				ph[i][j].backoff_home = DEPLOY_BACKOFF;
 			}
 			break;

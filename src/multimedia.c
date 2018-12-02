@@ -52,7 +52,7 @@ void clear_to_background() {
 
 static inline unsigned int phero_radius(float value) {
 
-    return (unsigned int)ceil((CELL_SIZE / 2) * (value / SMELL_UB));
+    return (unsigned int)ceil((CELL_SIZE / 2) * (value / SMELL_UNIT));
 }
 
 
@@ -95,10 +95,12 @@ static inline void draw_ant(BITMAP *antbmp, int i) {
 
 }
 
+
 void draw_food() {
 
-    circlefill(surface, FOOD_X, FOOD_Y, 20, COLOR_GREEN);   // TODO: fix position
+    circlefill(surface, FOOD_X, FOOD_Y, 20, COLOR_GREEN);
 }
+
 
 void *graphics_behaviour(void *arg) {
 

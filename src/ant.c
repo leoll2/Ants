@@ -60,7 +60,6 @@ void exploration_step(ant *const a) {
 	a->pos.angle = fmod(a->pos.angle + (EXPL_CONE * (double)rand() / RAND_MAX - EXPL_CONE / 2), TWO_PI);
 	if (a->pos.angle < 0)
 		a->pos.angle += TWO_PI;
-	//printf("ant: %d  x:%d  y: %d  angle: %f\n", a->id, a->pos.x, a->pos.y, a->pos.angle);
 }
 
 
