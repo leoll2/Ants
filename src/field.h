@@ -41,7 +41,7 @@ visual_scan find_target_visually(int x, int y, int radius, phero_type type);
 
 smell_scan find_smell_direction(int x, int y, int orientation, int radius, scan_mode mode, phero_type type);
 
-void deploy_pheromone(unsigned int id, int x, int y, phero_type type);
+void deploy_pheromone(unsigned int id, int x, int y, phero_type type, float value);
 
 unsigned int start_pheromones();
 

@@ -7,7 +7,8 @@
 #define SMELL_UB			250.0	// maximum pheromone intensity in a single cell
 #define SMELL_THRESH		1.0		// minimum intensity of a pheromone not approximable to 0
 #define DEPLOY_BACKOFF		5		// backoff time before another pheromone can be deployed in same cell
-#define DECAY_FACTOR		0.96	// pheromone decaying factor (multiplies previous value)
+#define DEPLOY_FACTOR		0.96	// regulates pheromone deployment (trail length)
+#define DECAY_FACTOR		0.98	// regulates pheromone evaporation (trail duration)
 
 #define WCET_DECAY			50
 #define PRD_DECAY			100

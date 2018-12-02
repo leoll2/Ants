@@ -18,6 +18,7 @@ void init_ant(ant *const a, int id) {
 	a->pos.angle = rand() * TWO_PI;
 	a->interest = FOOD;
 	a->behaviour = RESTING;
+	a->excitement = 1.0;
 }
 
 
@@ -25,6 +26,13 @@ void move_ant_random(ant *const a) {	// DEBUG PURPOSE
 	
 	a->pos.x = rand() % FIELD_WIDTH;
 	a->pos.y = rand() % FIELD_HEIGHT;
+}
+
+
+void reverse_direction(ant *const a) {
+
+	a->pos.angle = fmod((a->pos.angle + M_PI), TWO_PI);
+	printf("Reversed!\n");
 }
 
 
@@ -95,12 +103,16 @@ void *ant_routine(void *arg) {
 	pthread_mutex_lock(&a->mtx);
 	switch (a->behaviour) {
 		case RESTING:
+			// reverse_direction(a);	// TO BE FIXED (ants are initialized resting)
 			a->interest = FOOD;
 			a->behaviour = EXPLORING;
+			a->excitement = 1.0;
 			break;
 		case EATING:
+			reverse_direction(a);
 			a->interest = HOME;
 			a->behaviour = EXPLORING;
+			a->excitement = 1.0;
 			break;
 		case EXPLORING:
 			v_scan = find_target_visually(a->pos.x, a->pos.y, VISION_RADIUS, a->interest);
@@ -129,12 +141,14 @@ void *ant_routine(void *arg) {
 				break;
 			}
 			s_scan = find_smell_direction(a->pos.x, a->pos.y, a->pos.angle, 
-					OLFACTION_RADIUS, FORWARD, a->interest
+					OLFACTION_RADIUS, FULL, a->interest		// CHANGED DBG: should be FORWARD
 			);
 			if (s_scan.success && !s_scan.local_optimum) {
 				tracking_step(a, s_scan.opt_x, s_scan.opt_y);
 			} else if (s_scan.success && s_scan.local_optimum) {
 				// TODO: esci dal minimo locale
+				printf("ant: %d interest: %s minimo locale!\n", a->id, 
+								(a->interest == FOOD) ? "food" : "home");
 				a->behaviour = EXPLORING;
 			} else {
 				exploration_step(a);
@@ -145,7 +159,10 @@ void *ant_routine(void *arg) {
 			printf("This should not happen! (unrecognized ant behaviour)\n");
 	}
 	//move_ant_random(a);
-	deploy_pheromone(a->id, a->pos.x, a->pos.y, (a->interest == FOOD) ? HOME : FOOD);
+	deploy_pheromone(a->id, a->pos.x, a->pos.y, 
+					 a->interest == FOOD ? HOME : FOOD, a->excitement * SMELL_UNIT
+	);
+	a->excitement *= DEPLOY_FACTOR;
 
 	pthread_mutex_unlock(&a->mtx);
 }

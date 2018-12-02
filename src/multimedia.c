@@ -97,7 +97,7 @@ static inline void draw_ant(BITMAP *antbmp, int i) {
 
 void draw_food() {
 
-    circlefill(surface, FOOD_X, FOOD_Y, 10, COLOR_GREEN);
+    circlefill(surface, FOOD_X, FOOD_Y, 20, COLOR_GREEN);   // TODO: fix position
 }
 
 void *graphics_behaviour(void *arg) {

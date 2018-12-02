@@ -8,8 +8,8 @@
 #define FIELD_WIDTH 	640	// (pixel)
 #define FIELD_HEIGHT 	480
 
-#define FOOD_X			400
-#define FOOD_Y			300
+#define FOOD_X			200
+#define FOOD_Y			200
 #define HOME_X			0
 #define HOME_Y			0
 

@@ -25,6 +25,7 @@ typedef struct ant {
 	position 		pos;		// ant position
 	phero_type		interest;	// looking for food or home?
 	behaviour		behaviour;	// following a trail or exploring?
+	float			excitement;	// intensity of the released pheromone 
 	pthread_mutex_t mtx;		// mutex to protect the struct
 } ant;
 
