@@ -38,10 +38,12 @@ build/rt_thread.o: src/rt_thread.c src/rt_thread.h
 ################
 
 main: build/main.o build/ant.o build/field.o build/multimedia.o build/rt_thread.o
-	$(CC) $(ALLEG) $(PTHREAD) \
+	$(CC) \
 	build/main.o \
 	build/ant.o \
 	build/field.o \
 	build/multimedia.o \
 	build/rt_thread.o \
-	-o bin/main
+	-o bin/main $(ALLEG) $(PTHREAD) 
+
+
