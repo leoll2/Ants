@@ -7,6 +7,10 @@
 #include "multimedia.h"
 
 
+#define BG_PATH     "img/dirt.bmp"
+#define ANT_PATH    "img/ant.bmp"
+
+
 BITMAP* surface = NULL;
 unsigned int graphics_tid;
 
@@ -42,7 +46,7 @@ unsigned int init_allegro() {
 
 void clear_to_background() {
 
-    surface = load_bitmap("img/dirt.bmp", NULL);
+    surface = load_bitmap(BG_PATH, NULL);
 }
 
 
@@ -91,12 +95,20 @@ static inline void draw_ant(BITMAP *antbmp, int i) {
 
 }
 
+void draw_food() {
+
+    circlefill(surface, FOOD_X, FOOD_Y, 10, COLOR_GREEN);
+}
+
 void *graphics_behaviour(void *arg) {
 
     BITMAP *antbmp;
-    antbmp = load_bitmap("img/ant.bmp", NULL);  
+    antbmp = load_bitmap(ANT_PATH, NULL);  
 
     clear_to_background();
+
+    // Draw food
+    draw_food();
 
     // Draw ants
     for (int i = 0; i < POP_SIZE_MAX; ++i)

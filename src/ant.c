@@ -2,7 +2,6 @@
 #include <stdio.h>
 
 #include "ant.h"
-#include "field.h"
 
 const float TWO_PI = 2 * M_PI;
 
@@ -17,6 +16,8 @@ void init_ant(ant *const a, int id) {
 	a->id = (unsigned int)id;
 	a->pos.x = a->pos.y = 0;
 	a->pos.angle = rand() * TWO_PI;
+	a->interest = FOOD;
+	a->behaviour = RESTING;
 }
 
 
@@ -27,7 +28,7 @@ void move_ant_random(ant *const a) {	// DEBUG PURPOSE
 }
 
 
-void move_ant(ant *const a) {
+void exploration_step(ant *const a) {
 
 	a->pos.x += (int)round(STEP_LENGTH * cos(a->pos.angle));
 	if (a->pos.x <= 0) {
@@ -50,20 +51,101 @@ void move_ant(ant *const a) {
 	}
 
 	a->pos.angle = fmod(a->pos.angle + (EXPL_CONE * (double)rand() / RAND_MAX - EXPL_CONE / 2), TWO_PI);
+	if (a->pos.angle < 0)
+		a->pos.angle += TWO_PI;
 	//printf("ant: %d  x:%d  y: %d  angle: %f\n", a->id, a->pos.x, a->pos.y, a->pos.angle);
 }
 
 
-void *ant_behaviour(void *arg) {
+/* Return true if the target has been reached, false if yet to be reached. */
+bool tracking_step(ant *const a, int target_x, int target_y) {
+
+	// Return if ant is already in the target position
+	if ((a->pos.x == target_x) && (a->pos.y = target_y))
+		return true;
+
+	// Align with the target
+	a->pos.angle = fmod(atan2(a->pos.y - target_y, target_x - a->pos.x), TWO_PI);
+	if (a->pos.angle < 0)
+		a->pos.angle += TWO_PI;
+
+	// If target is close enough to be directly reached, go there
+	if (hypot(target_x - a->pos.x, target_y - a->pos.y) <= STEP_LENGTH) {
+		a->pos.x = target_x;
+		a->pos.y = target_y;
+		return true;
+	} else {
+		a->pos.x += STEP_LENGTH * cos(a->pos.angle);
+		a->pos.y -= STEP_LENGTH * sin(a->pos.angle);
+		return false;
+	}
+}
+
+
+void *ant_routine(void *arg) {
 
 	ant *const a = (ant *)arg;
 
-	pthread_mutex_lock(&a->mtx);
+	visual_scan v_scan;
+	smell_scan  s_scan;
+	/*printf("ant: %d  succ:%d  local:%d  dirx:%d  diry:%d\n", a->id, 
+			(int)scan.success, (int)scan.local_optimum, scan.opt_x, scan.opt_y
+	);*/
 
+	pthread_mutex_lock(&a->mtx);
+	switch (a->behaviour) {
+		case RESTING:
+			a->interest = FOOD;
+			a->behaviour = EXPLORING;
+			break;
+		case EATING:
+			a->interest = HOME;
+			a->behaviour = EXPLORING;
+			break;
+		case EXPLORING:
+			v_scan = find_target_visually(a->pos.x, a->pos.y, VISION_RADIUS, a->interest);
+			if (v_scan.success) {
+				if (tracking_step(a, v_scan.target_x, v_scan.target_y))
+					a->behaviour = (a->interest == FOOD) ? EATING : RESTING;
+				else
+					a->behaviour = TRACKING;
+				break;
+			}
+			s_scan = find_smell_direction(a->pos.x, a->pos.y, a->pos.angle, 
+					OLFACTION_RADIUS, FULL, a->interest
+			);
+			if (s_scan.success) {
+				tracking_step(a, s_scan.opt_x, s_scan.opt_y);
+				a->behaviour = TRACKING;
+			} else {
+				exploration_step(a);
+			}
+			break;
+		case TRACKING:
+			v_scan = find_target_visually(a->pos.x, a->pos.y, VISION_RADIUS, a->interest);
+			if (v_scan.success) {
+				if (tracking_step(a, v_scan.target_x, v_scan.target_y))
+					a->behaviour = (a->interest == FOOD) ? EATING : RESTING;
+				break;
+			}
+			s_scan = find_smell_direction(a->pos.x, a->pos.y, a->pos.angle, 
+					OLFACTION_RADIUS, FORWARD, a->interest
+			);
+			if (s_scan.success && !s_scan.local_optimum) {
+				tracking_step(a, s_scan.opt_x, s_scan.opt_y);
+			} else if (s_scan.success && s_scan.local_optimum) {
+				// TODO: esci dal minimo locale
+				a->behaviour = EXPLORING;
+			} else {
+				exploration_step(a);
+				a->behaviour = EXPLORING;
+			}
+			break;
+		default:
+			printf("This should not happen! (unrecognized ant behaviour)\n");
+	}
 	//move_ant_random(a);
-	move_ant(a);
-	deploy_pheromone(a->id, a->pos.x, a->pos.y, PHERO_FOOD);
-	deploy_pheromone(a->id, a->pos.x, a->pos.y, PHERO_HOME);
+	deploy_pheromone(a->id, a->pos.x, a->pos.y, (a->interest == FOOD) ? HOME : FOOD);
 
 	pthread_mutex_unlock(&a->mtx);
 }
@@ -83,7 +165,7 @@ int spawn_ants(unsigned int n) {
 
 	for (int i = 0; i < n; ++i) {
 		pthread_mutex_lock(&ants[i].mtx);	// prevents the ant from running before initialization
-		id = start_thread(ant_behaviour, &ants[i], SCHED_FIFO, WCET_ANTS, PRD_ANTS, DL_ANTS, PRIO_ANTS);
+		id = start_thread(ant_routine, &ants[i], SCHED_FIFO, WCET_ANTS, PRD_ANTS, DL_ANTS, PRIO_ANTS);
 		if (id < 0) {
 			pthread_mutex_unlock(&ants[i].mtx);
 			pthread_mutex_unlock(&ants_mtx);

@@ -7,20 +7,25 @@
 
 #include "conf/ants.h"
 #include "conf/field.h"
+#include "field.h"
 #include "rt_thread.h"
 
+typedef enum behaviour {EXPLORING, TRACKING, EATING, RESTING} behaviour;
+
 typedef struct position {
-	int x;
-	int y;
-	float angle;
+	int 			x;			// [pixel] x coordinate
+	int 			y;			// [pixel] y coordinate
+	float 			angle;		// [radians] angle in [0, 2*pi)
 } position;
 
 
 typedef struct ant {
-	bool alive;
-	unsigned int id;	// TODO: useful to be killed
-	position pos;
-	pthread_mutex_t mtx;
+	bool 			alive;		// is ant allocated? is the data meaningful?
+	unsigned int 	id;			// unique ant identifier
+	position 		pos;		// ant position
+	phero_type		interest;	// looking for food or home?
+	behaviour		behaviour;	// following a trail or exploring?
+	pthread_mutex_t mtx;		// mutex to protect the struct
 } ant;
 
 
