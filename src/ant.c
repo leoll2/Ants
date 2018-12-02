@@ -32,7 +32,6 @@ void move_ant_random(ant *const a) {	// DEBUG PURPOSE
 void reverse_direction(ant *const a) {
 
 	a->pos.angle = fmod((a->pos.angle + M_PI), TWO_PI);
-	printf("Reversed!\n");
 }
 
 
@@ -96,9 +95,6 @@ void *ant_routine(void *arg) {
 
 	visual_scan v_scan;
 	smell_scan  s_scan;
-	/*printf("ant: %d  succ:%d  local:%d  dirx:%d  diry:%d\n", a->id, 
-			(int)scan.success, (int)scan.local_optimum, scan.opt_x, scan.opt_y
-	);*/
 
 	pthread_mutex_lock(&a->mtx);
 	switch (a->behaviour) {
@@ -158,12 +154,12 @@ void *ant_routine(void *arg) {
 		default:
 			printf("This should not happen! (unrecognized ant behaviour)\n");
 	}
-	//move_ant_random(a);
+
 	deploy_pheromone(a->id, a->pos.x, a->pos.y, 
-					 a->interest == FOOD ? HOME : FOOD, a->excitement * SMELL_UNIT
+					 a->interest == FOOD ? HOME : FOOD,
+					 a->excitement * SMELL_UNIT
 	);
 	a->excitement *= DEPLOY_FACTOR;
-
 	pthread_mutex_unlock(&a->mtx);
 }
 

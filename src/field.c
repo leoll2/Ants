@@ -34,7 +34,7 @@ void deploy_pheromone(unsigned int id, int x, int y, phero_type type, float valu
 	switch(type) {
 		case FOOD:
 			if (ph[i][j].backoff_food == 0) {
-				ph[i][j].food += value;		// ADD HOME TOO!
+				ph[i][j].food = MAX(ph[i][j].food, value);
 				if (ph[i][j].food > SMELL_UB)
 					ph[i][j].food = SMELL_UB;
 				ph[i][j].backoff_food = DEPLOY_BACKOFF;
@@ -42,7 +42,7 @@ void deploy_pheromone(unsigned int id, int x, int y, phero_type type, float valu
 			break;
 		case HOME:
 			if (ph[i][j].backoff_home == 0) {
-				ph[i][j].home += value;		// ADD HOME TOO!
+				ph[i][j].home = MAX(ph[i][j].home, value);
 				if (ph[i][j].home > SMELL_UB)
 					ph[i][j].home = SMELL_UB;
 				ph[i][j].backoff_home = DEPLOY_BACKOFF;
@@ -53,6 +53,8 @@ void deploy_pheromone(unsigned int id, int x, int y, phero_type type, float valu
 	}
 	pthread_mutex_unlock(&ph[i][j].mtx);
 }
+
+
 
 
 visual_scan find_target_visually(int x, int y, int radius, phero_type type) {
