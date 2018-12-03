@@ -7,9 +7,10 @@
 #include "multimedia.h"
 
 
-#define BG_PATH     "img/dirt.bmp"
-#define ANT_PATH    "img/ant.bmp"
-#define FOOD_PATH   "img/apple.bmp"
+#define BG_PATH         "img/dirt.bmp"
+#define ANT_PATH        "img/ant.bmp"
+#define FOOD_PATH       "img/apple.bmp"
+#define HOME_PATH       "img/anthill.bmp"
 
 
 BITMAP* surface = NULL;
@@ -97,6 +98,14 @@ static inline void draw_ant(BITMAP *antbmp, int i) {
 }
 
 
+
+void draw_anthill(BITMAP *anthillbmp) {
+
+    draw_sprite(surface, anthillbmp, HOME_X - 30, HOME_Y - 30);
+}
+
+
+
 void draw_food(BITMAP *foodbmp) {
 
     draw_sprite(surface, foodbmp, FOOD_X - 20, FOOD_Y - 20);
@@ -110,8 +119,13 @@ void *graphics_behaviour(void *arg) {
     antbmp = load_bitmap(ANT_PATH, NULL);
     BITMAP *foodbmp;
     foodbmp = load_bitmap(FOOD_PATH, NULL);
+    BITMAP *anthillbmp;
+    anthillbmp = load_bitmap(HOME_PATH, NULL);
 
     clear_to_background();
+
+    // Draw anthill
+    draw_anthill(anthillbmp);
 
     // Draw food
     draw_food(foodbmp);
