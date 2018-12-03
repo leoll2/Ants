@@ -1,8 +1,9 @@
 CC = gcc
 CFLAGS = -Wall -g -O2
-ALLEG = `allegro-config --libs`
 CONF = -I.
-PTHREAD = -lpthread -lrt -lm
+ALLEG = `allegro-config --libs`
+PTHREAD = -lpthread -lrt 
+MATH = -lm
 
 .PHONY: all clean
 
@@ -44,6 +45,6 @@ main: build/main.o build/ant.o build/field.o build/multimedia.o build/rt_thread.
 	build/field.o \
 	build/multimedia.o \
 	build/rt_thread.o \
-	-o bin/main $(ALLEG) $(PTHREAD) 
+	-o bin/main $(ALLEG) $(PTHREAD) $(MATH)
 
 
