@@ -14,8 +14,8 @@ void init_ant(ant *const a, int id) {
 
 	a->alive = 		true;
 	a->id = 		(unsigned int)id;
-	a->pos.x = 		0;
-	a->pos.y = 		0;
+	a->pos.x = 		HOME_X;
+	a->pos.y = 		HOME_Y;
 	a->pos.angle = 	rand() * TWO_PI;
 	a->interest = 	FOOD;
 	a->behaviour = 	RESTING;
@@ -89,7 +89,7 @@ void advancement_step(ant *const a) {
 bool tracking_step(ant *const a, int target_x, int target_y) {
 
 	// Return if ant is already in the target position
-	if ((a->pos.x == target_x) && (a->pos.y = target_y))
+	if ((a->pos.x == target_x) && (a->pos.y == target_y))
 		return true;
 
 	// Align with the target
@@ -118,9 +118,10 @@ void *ant_routine(void *arg) {
 	smell_scan  s_scan;
 
 	pthread_mutex_lock(&a->mtx);
+
 	switch (a->behaviour) {
 		case RESTING:
-			// reverse_direction(a);	// TO BE FIXED (ants are initialized resting)
+			reverse_direction(a);
 			a->interest = FOOD;
 			a->behaviour = EXPLOITING;
 			a->excitement = 1.0;
@@ -157,12 +158,11 @@ void *ant_routine(void *arg) {
 				if (want_to_explore(a->audacity)) {
 					a->expl_desire = EXPL_DURATION;
 					a->behaviour = EXPLORING;
-				} else
+				} else {
 					tracking_step(a, s_scan.opt_x, s_scan.opt_y);
+				}
 			} else if (s_scan.success && s_scan.local_optimum) {
 				// Explore to escape from local minimum
-				printf("ant: %d interest: %s minimo locale!\n", a->id, 
-								(a->interest == FOOD) ? "food" : "home");
 				a->expl_desire = 3;
 				a->behaviour = EXPLORING;
 			} else {
@@ -178,6 +178,7 @@ void *ant_routine(void *arg) {
 					 a->excitement * SMELL_UNIT
 	);
 	a->excitement *= DEPLOY_FACTOR;
+
 	pthread_mutex_unlock(&a->mtx);
 }
 
