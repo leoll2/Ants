@@ -10,7 +10,7 @@
 #include "field.h"
 #include "rt_thread.h"
 
-typedef enum behaviour {EXPLORING, TRACKING, EATING, RESTING} behaviour;
+typedef enum behaviour {EXPLORING, EXPLOITING, EATING, RESTING} behaviour;
 
 typedef struct position {
 	int 			x;			// [pixel] x coordinate

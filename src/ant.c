@@ -100,43 +100,29 @@ void *ant_routine(void *arg) {
 		case RESTING:
 			// reverse_direction(a);	// TO BE FIXED (ants are initialized resting)
 			a->interest = FOOD;
-			a->behaviour = EXPLORING;
+			a->behaviour = EXPLOITING;
 			a->excitement = 1.0;
 			break;
 		case EATING:
 			reverse_direction(a);
 			a->interest = HOME;
-			a->behaviour = EXPLORING;
+			a->behaviour = EXPLOITING;
 			a->excitement = 1.0;
 			break;
 		case EXPLORING:
+			printf("ant: %d Stuck in exploring\n", a->id);
+			break;
+		case EXPLOITING:
+			// Is the target near enough to be seen?
 			v_scan = find_target_visually(a->pos.x, a->pos.y, VISION_RADIUS, a->interest);
 			if (v_scan.success) {
 				if (tracking_step(a, v_scan.target_x, v_scan.target_y))
 					a->behaviour = (a->interest == FOOD) ? EATING : RESTING;
-				else
-					a->behaviour = TRACKING;
 				break;
 			}
+			// Are there pheromones nearby?
 			s_scan = find_smell_direction(a->pos.x, a->pos.y, a->pos.angle, 
 					OLFACTION_RADIUS, FULL, a->interest
-			);
-			if (s_scan.success) {
-				tracking_step(a, s_scan.opt_x, s_scan.opt_y);
-				a->behaviour = TRACKING;
-			} else {
-				exploration_step(a);
-			}
-			break;
-		case TRACKING:
-			v_scan = find_target_visually(a->pos.x, a->pos.y, VISION_RADIUS, a->interest);
-			if (v_scan.success) {
-				if (tracking_step(a, v_scan.target_x, v_scan.target_y))
-					a->behaviour = (a->interest == FOOD) ? EATING : RESTING;
-				break;
-			}
-			s_scan = find_smell_direction(a->pos.x, a->pos.y, a->pos.angle, 
-					OLFACTION_RADIUS, FULL, a->interest		// CHANGED DBG: should be FORWARD
 			);
 			if (s_scan.success && !s_scan.local_optimum) {
 				tracking_step(a, s_scan.opt_x, s_scan.opt_y);
@@ -147,7 +133,6 @@ void *ant_routine(void *arg) {
 				a->behaviour = EXPLORING;
 			} else {
 				exploration_step(a);
-				a->behaviour = EXPLORING;
 			}
 			break;
 		default:
