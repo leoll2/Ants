@@ -6,6 +6,8 @@
 #define EXPL_CONE			0.3		// [radians] max deviation between consecutive moves
 #define OLFACTION_RADIUS	3		// [cell] olfaction radius
 #define VISION_RADIUS		20		// [pixel] vision radius
+#define AUDACITY			0.01	// probability of exploration rather than eploitation
+#define EXPL_DURATION		10		// [ticks] exploration duration (indifference to pheromones)
 
 #define WCET_ANTS		50
 #define PRD_ANTS		100

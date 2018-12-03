@@ -25,7 +25,10 @@ typedef struct ant {
 	position 		pos;		// ant position
 	phero_type		interest;	// looking for food or home?
 	behaviour		behaviour;	// following a trail or exploring?
-	float			excitement;	// intensity of the released pheromone 
+	float			excitement;	// intensity of the pheromone to be released
+	float 			audacity;	// propensity for explorative decisions
+	bool			diverted;	// has the ant recently diverted from its path to explore?
+	unsigned int 	expl_desire;// ticks left before the ant stops exploring
 	pthread_mutex_t mtx;		// mutex to protect the struct
 } ant;
 

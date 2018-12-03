@@ -12,13 +12,17 @@ pthread_mutex_t ants_mtx = PTHREAD_MUTEX_INITIALIZER;
 
 void init_ant(ant *const a, int id) {
 
-	a->alive = true;
-	a->id = (unsigned int)id;
-	a->pos.x = a->pos.y = 0;
-	a->pos.angle = rand() * TWO_PI;
-	a->interest = FOOD;
-	a->behaviour = RESTING;
+	a->alive = 		true;
+	a->id = 		(unsigned int)id;
+	a->pos.x = 		0;
+	a->pos.y = 		0;
+	a->pos.angle = 	rand() * TWO_PI;
+	a->interest = 	FOOD;
+	a->behaviour = 	RESTING;
 	a->excitement = 1.0;
+	a->audacity = 	AUDACITY;
+	a->diverted = 	false;
+	a->expl_desire = 0;
 }
 
 
@@ -29,13 +33,31 @@ void move_ant_random(ant *const a) {	// DEBUG PURPOSE
 }
 
 
-void reverse_direction(ant *const a) {
+static inline void reverse_direction(ant *const a) {
 
 	a->pos.angle = fmod((a->pos.angle + M_PI), TWO_PI);
 }
 
 
-void exploration_step(ant *const a) {
+
+static inline void divert_direction(ant *const a) {
+
+	a->diverted = true;
+	if (rand() % 2)
+		a->pos.angle = fmod((a->pos.angle + M_PI / 2), TWO_PI);
+	else
+		a->pos.angle = fmod((a->pos.angle + 3 * M_PI / 2), TWO_PI);
+}
+
+
+static inline bool want_to_explore(float audacity) {
+
+	return (((double)rand() / RAND_MAX) < audacity);
+}
+
+
+
+void advancement_step(ant *const a) {
 
 	a->pos.x += (int)round(STEP_LENGTH * cos(a->pos.angle));
 	if (a->pos.x <= 0) {
@@ -110,7 +132,14 @@ void *ant_routine(void *arg) {
 			a->excitement = 1.0;
 			break;
 		case EXPLORING:
-			printf("ant: %d Stuck in exploring\n", a->id);
+			if (!a->diverted)
+				divert_direction(a);
+			advancement_step(a);
+			a->expl_desire--;
+			if (a->expl_desire == 0) {
+				a->diverted = false;
+				a->behaviour = EXPLOITING;
+			}
 			break;
 		case EXPLOITING:
 			// Is the target near enough to be seen?
@@ -125,14 +154,19 @@ void *ant_routine(void *arg) {
 					OLFACTION_RADIUS, FULL, a->interest
 			);
 			if (s_scan.success && !s_scan.local_optimum) {
-				tracking_step(a, s_scan.opt_x, s_scan.opt_y);
+				if (want_to_explore(a->audacity)) {
+					a->expl_desire = EXPL_DURATION;
+					a->behaviour = EXPLORING;
+				} else
+					tracking_step(a, s_scan.opt_x, s_scan.opt_y);
 			} else if (s_scan.success && s_scan.local_optimum) {
-				// TODO: esci dal minimo locale
+				// Explore to escape from local minimum
 				printf("ant: %d interest: %s minimo locale!\n", a->id, 
 								(a->interest == FOOD) ? "food" : "home");
+				a->expl_desire = 3;
 				a->behaviour = EXPLORING;
 			} else {
-				exploration_step(a);
+				advancement_step(a);
 			}
 			break;
 		default:

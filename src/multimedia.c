@@ -9,6 +9,7 @@
 
 #define BG_PATH     "img/dirt.bmp"
 #define ANT_PATH    "img/ant.bmp"
+#define FOOD_PATH   "img/apple.bmp"
 
 
 BITMAP* surface = NULL;
@@ -96,21 +97,24 @@ static inline void draw_ant(BITMAP *antbmp, int i) {
 }
 
 
-void draw_food() {
+void draw_food(BITMAP *foodbmp) {
 
-    circlefill(surface, FOOD_X, FOOD_Y, 20, COLOR_GREEN);
+    draw_sprite(surface, foodbmp, FOOD_X - 20, FOOD_Y - 20);
+    //circlefill(surface, FOOD_X, FOOD_Y, 20, COLOR_GREEN);
 }
 
 
 void *graphics_behaviour(void *arg) {
 
     BITMAP *antbmp;
-    antbmp = load_bitmap(ANT_PATH, NULL);  
+    antbmp = load_bitmap(ANT_PATH, NULL);
+    BITMAP *foodbmp;
+    foodbmp = load_bitmap(FOOD_PATH, NULL);
 
     clear_to_background();
 
     // Draw food
-    draw_food();
+    draw_food(foodbmp);
 
     // Draw ants
     for (int i = 0; i < POP_SIZE_MAX; ++i)
