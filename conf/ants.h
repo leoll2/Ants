@@ -5,7 +5,7 @@
 #define STEP_LENGTH			5		// [pixel] length of a single step
 #define EXPL_CONE			0.3		// [radians] max deviation between consecutive moves
 #define OLFACTION_RADIUS	3		// [cell] olfaction radius
-#define VISION_RADIUS		20		// [pixel] vision radius
+#define VISION_RADIUS		30		// [pixel] vision radius
 #define AUDACITY			0.01	// probability of exploration rather than eploitation
 #define EXPL_DURATION		5		// [ticks] exploration duration (indifference to pheromones)
 

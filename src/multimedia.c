@@ -12,6 +12,9 @@
 #define FOOD_PATH       "img/apple.bmp"
 #define HOME_PATH       "img/anthill.bmp"
 
+#define IMG_FOOD_SIZE       40
+#define IMG_ANTHILL_SIZE    60
+
 
 BITMAP* surface = NULL;
 unsigned int graphics_tid;
@@ -101,15 +104,14 @@ static inline void draw_ant(BITMAP *antbmp, int i) {
 
 void draw_anthill(BITMAP *anthillbmp) {
 
-    draw_sprite(surface, anthillbmp, HOME_X - 30, HOME_Y - 30);
+    draw_sprite(surface, anthillbmp, HOME_X - IMG_ANTHILL_SIZE / 2, HOME_Y - IMG_ANTHILL_SIZE / 2);
 }
 
 
 
 void draw_food(BITMAP *foodbmp) {
 
-    draw_sprite(surface, foodbmp, FOOD_X - 20, FOOD_Y - 20);
-    //circlefill(surface, FOOD_X, FOOD_Y, 20, COLOR_GREEN);
+    draw_sprite(surface, foodbmp, FOOD_X - IMG_FOOD_SIZE / 2, FOOD_Y - IMG_FOOD_SIZE / 2);
 }
 
 
