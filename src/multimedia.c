@@ -2,6 +2,7 @@
 #include <math.h>
 #include <pthread.h>
 #include <stdio.h>
+#include <allegro/keyboard.h>
 
 #include "field.h"
 #include "multimedia.h"
@@ -15,7 +16,7 @@
 #define IMG_FOOD_SIZE       40
 #define IMG_ANTHILL_SIZE    60
 
-
+char s[20];
 BITMAP* surface = NULL;
 unsigned int graphics_tid;
 
@@ -38,10 +39,12 @@ unsigned int init_allegro() {
     install_keyboard();
 
     set_color_depth(32);
-    if (set_gfx_mode(GFX_AUTODETECT_WINDOWED, FIELD_WIDTH, FIELD_HEIGHT, 0, 0)) 
+    if (set_gfx_mode(GFX_AUTODETECT_WINDOWED, FIELD_WIDTH + STATUS_WINDOW_W, FIELD_HEIGHT + MENU_H , 0, 0))
         return 2;
     surface = create_bitmap(SCREEN_W, SCREEN_H);
-    
+
+
+
     clear_to_color(surface, COLOR_GREEN);
     blit(surface, screen, 0, 0, 0, 0, SCREEN_W, SCREEN_H);
 
@@ -66,17 +69,17 @@ static inline void draw_pheromone(int i, int j) {
     pthread_mutex_lock(&ph[i][j].mtx);
 
     if (ph[i][j].food > 0) {
-        circle(surface, 
-                i * CELL_SIZE + CELL_SIZE / 2, 
-                j * CELL_SIZE + CELL_SIZE / 2, 
-                phero_radius(ph[i][j].food), 
+        circle(surface,
+                i * CELL_SIZE + CELL_SIZE / 2,
+                j * CELL_SIZE + CELL_SIZE / 2,
+                phero_radius(ph[i][j].food),
                 COLOR_RED);
     }
     if (ph[i][j].home > 0) {
-        circle(surface, 
-                i * CELL_SIZE + CELL_SIZE / 2, 
-                j * CELL_SIZE + CELL_SIZE / 2, 
-                phero_radius(ph[i][j].home), 
+        circle(surface,
+                i * CELL_SIZE + CELL_SIZE / 2,
+                j * CELL_SIZE + CELL_SIZE / 2,
+                phero_radius(ph[i][j].home),
                 COLOR_BLUE);
     }
     pthread_mutex_unlock(&ph[i][j].mtx);
@@ -88,11 +91,11 @@ static inline void draw_ant(BITMAP *antbmp, int i) {
     ant *a = &ants[i];
     pthread_mutex_lock(&a->mtx);
 
-    if (a->alive) {    
+    if (a->alive) {
         if (antbmp != NULL) {
-            rotate_sprite(surface, antbmp, (a->pos.x - antbmp->w/2), 
+            rotate_sprite(surface, antbmp, (a->pos.x - antbmp->w/2),
                     (a->pos.y - antbmp->h/2), itofix(angle_float_to_256(a->pos.angle)));
-        } else 
+        } else
             circlefill(surface, a->pos.x, a->pos.y, CELL_SIZE / 2, COLOR_RED);  // fallback
     }
 
@@ -117,6 +120,7 @@ void draw_food(BITMAP *foodbmp) {
 
 void *graphics_behaviour(void *arg) {
 
+
     BITMAP *antbmp;
     antbmp = load_bitmap(ANT_PATH, NULL);
     BITMAP *foodbmp;
@@ -140,7 +144,11 @@ void *graphics_behaviour(void *arg) {
     for (int i = 0; i < PH_SIZE_H; ++i)
         for (int j = 0; j < PH_SIZE_V; ++j)
             draw_pheromone(i, j);
-  
+    textout_ex ( screen, font, "tasto aggiungi formica: a ; uccidi formica:  TASTO; arresta simulazione : qualsiasi"
+, 0, FIELD_HEIGHT+ MENU_H/2, COLOR_RED, 1  );
+    sprintf(s,"%d", n_ants);
+    textout_ex ( screen, font, "numero ants:" , MENU_W +10 , FIELD_HEIGHT, COLOR_RED, 1  );
+    textout_ex ( screen, font, s , MENU_W +110 , FIELD_HEIGHT, COLOR_RED, 1  );
     blit(surface, screen, 0, 0, 0, 0, SCREEN_W, SCREEN_H);
 }
 
@@ -153,7 +161,7 @@ unsigned int start_graphics() {
     if (ret)
         return ret;
 
-    ret = start_thread(graphics_behaviour, NULL, SCHED_FIFO, 
+    ret = start_thread(graphics_behaviour, NULL, SCHED_FIFO,
             WCET_GRAPHICS, PRD_GRAPHICS, DL_GRAPHICS, PRIO_GRAPHICS);
     if (graphics_tid < 0) {
         printf("Failed to initialize the graphics thread!\n");
@@ -166,6 +174,11 @@ unsigned int start_graphics() {
     return 0;
 }
 
+void increment_ants (k){
+	if ( (k >> 8)  == KEY_LEFT)
+		spawn_ants(1);
+
+}
 
 void stop_graphics() {
 

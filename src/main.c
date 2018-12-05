@@ -20,12 +20,15 @@ int main(int argc, char **argv) {
     	return 1;
 
     int k = readkey();
+		increment_ants(k);
+		int j= readkey();
+		//decrease_ants(j);
+		//int l= readkey();
+		kill_ants();
 
-    kill_ants();
     stop_graphics();
     stop_pheromones();
 
     return 0;
 }
 END_OF_MAIN()
-

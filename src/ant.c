@@ -1,6 +1,6 @@
 #include <math.h>
 #include <stdio.h>
-
+#include <allegro/keyboard.h>
 #include "ant.h"
 
 const float TWO_PI = 2 * M_PI;
@@ -8,6 +8,7 @@ const float TWO_PI = 2 * M_PI;
 ant ants[POP_SIZE_MAX];
 uint8_t n_ants = 0;
 pthread_mutex_t ants_mtx = PTHREAD_MUTEX_INITIALIZER;
+int numero;
 
 
 void init_ant(ant *const a, int id) {
@@ -27,7 +28,7 @@ void init_ant(ant *const a, int id) {
 
 
 void move_ant_random(ant *const a) {	// DEBUG PURPOSE
-	
+
 	a->pos.x = rand() % FIELD_WIDTH;
 	a->pos.y = rand() % FIELD_HEIGHT;
 }
@@ -151,7 +152,7 @@ void *ant_routine(void *arg) {
 				break;
 			}
 			// Are there pheromones nearby?
-			s_scan = find_smell_direction(a->pos.x, a->pos.y, a->pos.angle, 
+			s_scan = find_smell_direction(a->pos.x, a->pos.y, a->pos.angle,
 					OLFACTION_RADIUS, FULL, a->interest
 			);
 			if (s_scan.success && !s_scan.local_optimum) {
@@ -173,7 +174,7 @@ void *ant_routine(void *arg) {
 			printf("This should not happen! (unrecognized ant behaviour)\n");
 	}
 
-	deploy_pheromone(a->id, a->pos.x, a->pos.y, 
+	deploy_pheromone(a->id, a->pos.x, a->pos.y,
 					 a->interest == FOOD ? HOME : FOOD,
 					 a->excitement * SMELL_UNIT
 	);
@@ -217,6 +218,7 @@ int spawn_ants(unsigned int n) {
 }
 
 
+
 void kill_ants(void) {
 
 	int iter = n_ants;
@@ -237,3 +239,11 @@ void kill_ants(void) {
 
 	printf("Finished killing ants \n");
 }
+
+
+
+/*void decrease_ants (j){
+	if((j & 0xFF) == 0x64)
+		kill_ants(1);
+
+}*/
