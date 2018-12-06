@@ -1,4 +1,5 @@
 #include <allegro.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -6,6 +7,8 @@
 #include "field.h"
 #include "multimedia.h"
 #include "rt_thread.h"
+
+
 
 
 int main(int argc, char **argv) {
@@ -21,16 +24,20 @@ int main(int argc, char **argv) {
     printf("Pheromone decay successfully enabled.\n");
 
     unsigned int spawned = spawn_ants(DEFAULT_POP);
-    printf("Successfully spawned %d ants\n", spawned);
+    printf("Successfully spawned %d ants.\n", spawned);
 
     if (start_graphics())
     	return 1;
+    if (start_keyboard())
+        return 1;
 
-    int k = readkey();      // TODO: rimpiazza con una wait_termination(), la quale join il thread tastiera
+    //int k = readkey();      // TODO: rimpiazza con una wait_termination(), la quale join il thread tastiera
+    wait_for_termination();
 
     kill_ants();
-    printf("Ants killate\n");
+    printf("Ants killed.\n");
 
+    stop_keyboard();
     stop_graphics();
     stop_pheromones();
 

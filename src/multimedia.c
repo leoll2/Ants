@@ -16,9 +16,12 @@
 #define IMG_FOOD_SIZE       40
 #define IMG_ANTHILL_SIZE    60
 
-char s[20];
+
+pthread_cond_t terminate = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t terminate_mtx = PTHREAD_MUTEX_INITIALIZER;
+
+unsigned int graphics_tid, keyboard_tid;
 BITMAP* surface = NULL;
-unsigned int graphics_tid;
 
 
 /* Converts the format of an angle.:
@@ -39,11 +42,10 @@ unsigned int init_allegro() {
     install_keyboard();
 
     set_color_depth(32);
-    if (set_gfx_mode(GFX_AUTODETECT_WINDOWED, FIELD_WIDTH + STATUS_WINDOW_W, FIELD_HEIGHT + MENU_H , 0, 0))
+    if (set_gfx_mode(GFX_AUTODETECT_WINDOWED, FIELD_WIDTH + STATS_PANEL_W, 
+                FIELD_HEIGHT + TOOLBAR_H , 0, 0))
         return 2;
     surface = create_bitmap(SCREEN_W, SCREEN_H);
-
-
 
     clear_to_color(surface, COLOR_GREEN);
     blit(surface, screen, 0, 0, 0, 0, SCREEN_W, SCREEN_H);
@@ -56,6 +58,21 @@ void clear_to_background() {
 
     surface = load_bitmap(BG_PATH, NULL);
 }
+
+
+
+void draw_toolbar(void) {
+
+    rectfill(surface, 0, FIELD_HEIGHT, FIELD_WIDTH, SCREEN_H, COLOR_BLACK);
+}
+
+
+
+void draw_stats_panelbox(void) {
+
+    rectfill(surface, FIELD_WIDTH, 0, SCREEN_W, SCREEN_H, COLOR_WHITE);
+}
+
 
 
 static inline unsigned int phero_radius(float value) {
@@ -118,7 +135,10 @@ void draw_food(BITMAP *foodbmp) {
 }
 
 
+
 void *graphics_behaviour(void *arg) {
+
+    char s[20];
 
     BITMAP *antbmp;
     antbmp = load_bitmap(ANT_PATH, NULL);
@@ -128,6 +148,8 @@ void *graphics_behaviour(void *arg) {
     anthillbmp = load_bitmap(HOME_PATH, NULL);
 
     clear_to_background();
+    draw_toolbar();
+    draw_stats_panelbox();
 
     // Draw anthill
     draw_anthill(anthillbmp);
@@ -143,16 +165,16 @@ void *graphics_behaviour(void *arg) {
     for (int i = 0; i < PH_SIZE_H; ++i)
         for (int j = 0; j < PH_SIZE_V; ++j)
             draw_pheromone(i, j);
-    textout_ex ( screen, font, "tasto aggiungi formica: a ; uccidi formica:  TASTO; arresta simulazione : qualsiasi"
-, 0, FIELD_HEIGHT+ MENU_H/2, COLOR_RED, 1  );
+    textout_ex ( screen, font, "tasto aggiungi formica: A ; uccidi formica: K; arresta simulazione: ESC", 
+                0, FIELD_HEIGHT + TOOLBAR_H/2, COLOR_RED, 1  );
     sprintf(s,"%d", n_ants);
-    textout_ex ( screen, font, "numero ants:" , MENU_W +10 , FIELD_HEIGHT, COLOR_RED, 1  );
-    textout_ex ( screen, font, s , MENU_W +110 , FIELD_HEIGHT, COLOR_RED, 1  );
+    textout_ex ( screen, font, "numero ants:" , TOOLBAR_W + 10 , FIELD_HEIGHT, COLOR_RED, 1  );
+    textout_ex ( screen, font, s , TOOLBAR_W + 110 , FIELD_HEIGHT, COLOR_RED, 1  );
     blit(surface, screen, 0, 0, 0, 0, SCREEN_W, SCREEN_H);
 }
 
 
-unsigned int start_graphics() {
+unsigned int start_graphics(void) {
 
     unsigned int ret;
 
@@ -173,7 +195,7 @@ unsigned int start_graphics() {
     return 0;
 }
 
-void stop_graphics() {
+void stop_graphics(void) {
 
     stop_thread(graphics_tid);
     printf("Graphics thread stopped.\n");
@@ -191,7 +213,7 @@ void get_keycodes(char *scan, char *ascii) {
 
 
 
-// TODO: ATTIVALO
+
 void *keyboard_behaviour(void *arg) {
 
     int key;
@@ -201,18 +223,52 @@ void *keyboard_behaviour(void *arg) {
         get_keycodes(&scan, &ascii);
         // TODO: FARE COSE IN BASE AI TASTI PREMUTI
         switch (scan) {
-            case KEY_TAB:
-                printf("premuto tab\n");
+            case KEY_ESC:
+                pthread_mutex_lock(&terminate_mtx);
+                pthread_cond_signal(&terminate);
+                pthread_mutex_unlock(&terminate_mtx);
                 break;
             case KEY_SPACE:
-                printf("premuto spacebar\n");
+                printf("Pressed spacebar\n");
                 break;
             default:
-                printf("premuto non lo so\n");
+                printf("Press ESC to quit!\n");
         }
     }
 }
 
+
+unsigned int start_keyboard(void) {
+
+    unsigned int ret;
+
+    ret = start_thread(keyboard_behaviour, NULL, SCHED_FIFO,
+            WCET_KEYBOARD, PRD_KEYBOARD, DL_KEYBOARD, PRIO_KEYBOARD);
+    if (keyboard_tid < 0) {
+        printf("Failed to initialize the keyboard thread!\n");
+        return 1;
+    } else {
+        keyboard_tid = ret;
+        printf("Initialized the keyboard thread with id #%d.\n", keyboard_tid);
+    }
+    return 0;
+}
+
+
+
+void stop_keyboard(void) {
+
+    stop_thread(keyboard_tid);
+    printf("Keyboard thread stopped.\n");
+}
+
+
+void wait_for_termination(void) {
+
+    pthread_mutex_lock(&terminate_mtx);
+    pthread_cond_wait(&terminate, &terminate_mtx);
+    pthread_mutex_unlock(&terminate_mtx);
+}
 
 void increment_ants_command(int k){
     if ( (k >> 8)  == KEY_LEFT)
