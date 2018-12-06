@@ -174,10 +174,9 @@ unsigned int start_graphics() {
     return 0;
 }
 
-void increment_ants (k){
+void increment_ants(int k){
 	if ( (k >> 8)  == KEY_LEFT)
-		spawn_ants(1);
-
+		spawn_ant();
 }
 
 void stop_graphics() {

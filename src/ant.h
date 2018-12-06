@@ -21,7 +21,7 @@ typedef struct position {
 
 typedef struct ant {
 	bool 			alive;		// is ant allocated? is the data meaningful?
-	unsigned int 	id;			// unique ant identifier
+	unsigned int 	tid;		// thread identifier
 	position 		pos;		// ant position
 	phero_type		interest;	// looking for food or home?
 	behaviour		behaviour;	// following a trail or exploring?
@@ -38,8 +38,10 @@ extern uint8_t n_ants;
 extern pthread_mutex_t ants_mtx;
 
 
-int spawn_ants(unsigned int n_ants);
-
+void init_ants_manager();
+int spawn_ant(void);
+unsigned int spawn_ants(unsigned int n_ants);
+int kill_ant(unsigned int i);
 void kill_ants(void);
 
 

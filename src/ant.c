@@ -11,10 +11,10 @@ pthread_mutex_t ants_mtx = PTHREAD_MUTEX_INITIALIZER;
 int numero;
 
 
-void init_ant(ant *const a, int id) {
+void init_ant(ant *const a, int tid) {
 
 	a->alive = 		true;
-	a->id = 		(unsigned int)id;
+	a->tid = 		(unsigned int)tid;
 	a->pos.x = 		HOME_X;
 	a->pos.y = 		HOME_Y;
 	a->pos.angle = 	rand() * TWO_PI;
@@ -174,7 +174,7 @@ void *ant_routine(void *arg) {
 			printf("This should not happen! (unrecognized ant behaviour)\n");
 	}
 
-	deploy_pheromone(a->id, a->pos.x, a->pos.y,
+	deploy_pheromone(a->tid, a->pos.x, a->pos.y,
 					 a->interest == FOOD ? HOME : FOOD,
 					 a->excitement * SMELL_UNIT
 	);
@@ -184,66 +184,134 @@ void *ant_routine(void *arg) {
 }
 
 
-int spawn_ants(unsigned int n) {
 
-	int id;
+/* Allocates a previously unused ant structure and returns its index.
+*  If none is free, return POP_SIZE_MAX.
+*/
+unsigned int allocate_ant_id(void) {
+
+	unsigned int i = 0;
 
 	pthread_mutex_lock(&ants_mtx);
 
-	// clear the alive flag of all ants and init mutex
-	for (int i = 0; i < n; ++i) {
-		pthread_mutex_init(&ants[i].mtx, NULL);
-		ants[i].alive = false;
+	if (n_ants == POP_SIZE_MAX) {
+		pthread_mutex_unlock(&ants_mtx);
+		return POP_SIZE_MAX;
 	}
 
-	for (int i = 0; i < n; ++i) {
-		pthread_mutex_lock(&ants[i].mtx);	// prevents the ant from running before initialization
-		id = start_thread(ant_routine, &ants[i], SCHED_FIFO, WCET_ANTS, PRD_ANTS, DL_ANTS, PRIO_ANTS);
-		if (id < 0) {
-			pthread_mutex_unlock(&ants[i].mtx);
-			pthread_mutex_unlock(&ants_mtx);
-			printf("Failed to instantiate ant #%d\n", i);
-			return 1;
-		} else {
-			init_ant(&ants[i], id);
-			pthread_mutex_unlock(&ants[i].mtx);
-			++n_ants;	// TODO: ADD LOCK ON GLOBAL STRUCTURE
-			printf("Created ant %d with id #%d\n", i, id);
-		}
-	}
+	while (ants[i].alive)
+		++i;
+
+	ants[i].alive = true;
+	//pthread_mutex_init(&ants[i].mtx, NULL);	//moved in init_ants
+	++n_ants;
 
 	pthread_mutex_unlock(&ants_mtx);
+	return i;
+}
+
+
+
+/* Deallocates the ant struct of a terminated ant. */
+void deallocate_ant_id(unsigned int id) {
+
+	pthread_mutex_lock(&ants_mtx);
+	--n_ants;
+	ants[id].alive = false;
+	//pthread_mutex_destroy(&ants[id].mtx);
+	pthread_mutex_unlock(&ants_mtx);
+}
+
+
+
+/* Add a new ant to the current population.
+*  Returns 0 if success, -1 if population is full, -2 if thread pool is full.
+*/
+int spawn_ant(void) {
+
+	unsigned int a_id;		// id of the new ant (index in ants array)
+	int t_id;				// if the new thread
+
+	a_id = allocate_ant_id();
+	if (a_id == POP_SIZE_MAX) {
+		printf("Failed to spawn a new ant (ants limit reached)\n");
+		return -1;
+	}
+
+	pthread_mutex_lock(&ants[a_id].mtx);	// prevents the ant from running before initialization
+
+	t_id = start_thread(ant_routine, &ants[a_id], SCHED_FIFO, WCET_ANTS, PRD_ANTS, DL_ANTS, PRIO_ANTS);
+	if (t_id < 0) {
+		pthread_mutex_unlock(&ants[a_id].mtx);
+		deallocate_ant_id(a_id);
+		printf("Failed to spawn a new ant (threads limit reached)\n");
+		return -2;
+	} else {
+		init_ant(&ants[a_id], t_id);
+		pthread_mutex_unlock(&ants[a_id].mtx);
+		printf("Created ant with id %d and tid #%d\n", a_id, t_id);
+	}
+	pthread_mutex_unlock(&ants[a_id].mtx);
+	return 0;
+}
+
+
+
+/* Kills the ant with the specified id.
+*  Returns 0 if success, -1 if it was already dead. */
+int kill_ant(unsigned int i) {
+
+	pthread_mutex_lock(&ants[i].mtx);
+	if (!ants[i].alive) {
+		pthread_mutex_unlock(&ants[i].mtx);
+		return -1;
+	}
+	stop_thread(ants[i].tid);
+	pthread_mutex_unlock(&ants[i].mtx);
+
+	deallocate_ant_id(i);
 
 	return 0;
+}
+
+
+/* Spawns the specified number of ants. If there is not enough room for all,
+*  create as many as possible.
+*  Returns the number of successfully spawned ants.
+*/
+unsigned int spawn_ants(unsigned int n) {
+
+	for (int i = 0; i < n; ++i) {
+		if (spawn_ant() < 0)
+			return i;
+	}
+
+	return n;
 }
 
 
 
 void kill_ants(void) {
 
-	int iter = n_ants;
 	printf("Start killing ants \n");
 
-	pthread_mutex_lock(&ants_mtx);
-
-	for (int i = 0; i < iter; ++i) {
-		stop_thread(ants[i].id);
-		ants[i].alive = false;
-		--n_ants;	// TODO: ADD LOCK
+	for (int i = 0; i < POP_SIZE_MAX; ++i) {
+		kill_ant(i);
 	}
-
-	if (n_ants > 0)
-		printf("For some reason %d ants remained alive\n", n_ants);
-
-	pthread_mutex_unlock(&ants_mtx);
 
 	printf("Finished killing ants \n");
 }
 
 
 
-/*void decrease_ants (j){
-	if((j & 0xFF) == 0x64)
-		kill_ants(1);
+void init_ants_manager(void) {
 
-}*/
+	pthread_mutex_lock(&ants_mtx);
+
+	for (int i = 0; i < POP_SIZE_MAX; ++i) {
+		pthread_mutex_init(&ants[i].mtx, NULL);
+		ants[i].alive = false;
+	}
+
+	pthread_mutex_unlock(&ants_mtx);
+}

@@ -11,20 +11,25 @@
 int main(int argc, char **argv) {
 
 	srand(time(NULL));
+    printf("Inizio main\n");
 
     init_rt_thread_manager();
-
+    printf("Thread manager successfully initialized.\n");
+    init_ants_manager();
+    printf("Ant manager successfully initialized.\n");
     start_pheromones();
-    spawn_ants(8);
+    printf("Pheromone decay successfully enabled.\n");
+
+    unsigned int spawned = spawn_ants(DEFAULT_POP);
+    printf("Successfully spawned %d ants\n", spawned);
+
     if (start_graphics())
     	return 1;
 
-    int k = readkey();
-		increment_ants(k);
-		int j= readkey();
-		//decrease_ants(j);
-		//int l= readkey();
-		kill_ants();
+    int k = readkey();      // should be replaced with a wait_termination(), la quale join il thread tastiera
+
+    kill_ants();
+    printf("Ants killate\n");
 
     stop_graphics();
     stop_pheromones();
