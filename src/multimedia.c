@@ -120,7 +120,6 @@ void draw_food(BITMAP *foodbmp) {
 
 void *graphics_behaviour(void *arg) {
 
-
     BITMAP *antbmp;
     antbmp = load_bitmap(ANT_PATH, NULL);
     BITMAP *foodbmp;
@@ -174,13 +173,48 @@ unsigned int start_graphics() {
     return 0;
 }
 
-void increment_ants(int k){
-	if ( (k >> 8)  == KEY_LEFT)
-		spawn_ant();
-}
-
 void stop_graphics() {
 
     stop_thread(graphics_tid);
     printf("Graphics thread stopped.\n");
+}
+
+
+
+void get_keycodes(char *scan, char *ascii) {
+
+    int k;
+    k = readkey();  // read the key
+    *ascii = k;     // extract ascii code
+    *scan = k >> 8; // extract scan code
+}
+
+
+
+// TODO: ATTIVALO
+void *keyboard_behaviour(void *arg) {
+
+    int key;
+    char ascii, scan;
+
+    while (keypressed()) {
+        get_keycodes(&scan, &ascii);
+        // TODO: FARE COSE IN BASE AI TASTI PREMUTI
+        switch (scan) {
+            case KEY_TAB:
+                printf("premuto tab\n");
+                break;
+            case KEY_SPACE:
+                printf("premuto spacebar\n");
+                break;
+            default:
+                printf("premuto non lo so\n");
+        }
+    }
+}
+
+
+void increment_ants_command(int k){
+    if ( (k >> 8)  == KEY_LEFT)
+        spawn_ant();
 }

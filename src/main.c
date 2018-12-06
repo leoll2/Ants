@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
     if (start_graphics())
     	return 1;
 
-    int k = readkey();      // should be replaced with a wait_termination(), la quale join il thread tastiera
+    int k = readkey();      // TODO: rimpiazza con una wait_termination(), la quale join il thread tastiera
 
     kill_ants();
     printf("Ants killate\n");
