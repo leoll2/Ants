@@ -22,6 +22,7 @@ pthread_mutex_t terminate_mtx = PTHREAD_MUTEX_INITIALIZER;
 
 unsigned int graphics_tid, keyboard_tid;
 BITMAP* surface = NULL;
+BITMAP* fieldbmp = NULL;
 
 
 /* Converts the format of an angle.:
@@ -46,6 +47,7 @@ unsigned int init_allegro() {
                 FIELD_HEIGHT + TOOLBAR_H , 0, 0))
         return 2;
     surface = create_bitmap(SCREEN_W, SCREEN_H);
+    fieldbmp = load_bitmap(BG_PATH, NULL);
 
     clear_to_color(surface, COLOR_GREEN);
     blit(surface, screen, 0, 0, 0, 0, SCREEN_W, SCREEN_H);
@@ -56,21 +58,35 @@ unsigned int init_allegro() {
 
 void clear_to_background() {
 
-    surface = load_bitmap(BG_PATH, NULL);
+    blit(fieldbmp, surface, 0, 0, 0, 0, fieldbmp->w, fieldbmp->h);
 }
 
 
 
 void draw_toolbar(void) {
 
+    int x0 = 0;
+    int y0 = FIELD_HEIGHT;
+
     rectfill(surface, 0, FIELD_HEIGHT, FIELD_WIDTH, SCREEN_H, COLOR_BLACK);
+
+    textout_centre_ex(surface, font, "TOOLBAR", 
+            x0 + FIELD_WIDTH / 2 , y0 + TOOLBAR_H / 2, COLOR_RED, 1);
 }
 
 
 
 void draw_stats_panelbox(void) {
 
-    rectfill(surface, FIELD_WIDTH, 0, SCREEN_W, SCREEN_H, COLOR_WHITE);
+    int x0 = FIELD_WIDTH;
+    int y0 = 0;
+    char buf[20];
+
+    rectfill(surface, FIELD_WIDTH, 0, SCREEN_W, SCREEN_H, COLOR_BLACK);
+
+    sprintf(buf,"Ants: %d", n_ants);
+    textout_centre_ex(surface, font, buf, 
+            x0 + STATS_PANEL_W / 2, y0 + FIELD_HEIGHT / 2, COLOR_RED, 1);
 }
 
 
@@ -138,8 +154,6 @@ void draw_food(BITMAP *foodbmp) {
 
 void *graphics_behaviour(void *arg) {
 
-    char s[20];
-
     BITMAP *antbmp;
     antbmp = load_bitmap(ANT_PATH, NULL);
     BITMAP *foodbmp;
@@ -165,11 +179,7 @@ void *graphics_behaviour(void *arg) {
     for (int i = 0; i < PH_SIZE_H; ++i)
         for (int j = 0; j < PH_SIZE_V; ++j)
             draw_pheromone(i, j);
-    textout_ex ( screen, font, "tasto aggiungi formica: A ; uccidi formica: K; arresta simulazione: ESC", 
-                0, FIELD_HEIGHT + TOOLBAR_H/2, COLOR_RED, 1  );
-    sprintf(s,"%d", n_ants);
-    textout_ex ( screen, font, "numero ants:" , TOOLBAR_W + 10 , FIELD_HEIGHT, COLOR_RED, 1  );
-    textout_ex ( screen, font, s , TOOLBAR_W + 110 , FIELD_HEIGHT, COLOR_RED, 1  );
+    
     blit(surface, screen, 0, 0, 0, 0, SCREEN_W, SCREEN_H);
 }
 
