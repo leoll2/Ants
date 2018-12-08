@@ -7,6 +7,7 @@
 #define OLFACTION_RADIUS	3		// [cell] olfaction radius
 #define VISION_RADIUS		30		// [pixel] vision radius
 #define AUDACITY			0.01	// probability of exploration rather than eploitation
+#define AUDACITY_DISCOUNT	0.95	// audacity is discounted everytime the ant gets to the target
 #define EXPL_DURATION		5		// [ticks] exploration duration (indifference to pheromones)
 
 #define DEFAULT_POP			8		// initial population by default

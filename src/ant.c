@@ -125,12 +125,14 @@ void *ant_routine(void *arg) {
 			reverse_direction(a);
 			a->interest = FOOD;
 			a->behaviour = EXPLOITING;
+			a->audacity *= AUDACITY_DISCOUNT;
 			a->excitement = 1.0;
 			break;
 		case EATING:
 			reverse_direction(a);
 			a->interest = HOME;
 			a->behaviour = EXPLOITING;
+			a->audacity *= AUDACITY_DISCOUNT;
 			a->excitement = 1.0;
 			break;
 		case EXPLORING:
