@@ -20,6 +20,8 @@ int main(int argc, char **argv) {
     printf("Thread manager successfully initialized.\n");
     init_ants_manager();
     printf("Ant manager successfully initialized.\n");
+    init_foods();
+    printf("Food manager successfully initialized.\n");
     start_pheromones();
     printf("Pheromone decay successfully enabled.\n");
 

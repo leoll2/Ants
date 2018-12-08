@@ -12,6 +12,14 @@ typedef enum scan_mode  {FULL, FORWARD} scan_mode;
 #define PH_SIZE_V		(FIELD_HEIGHT / CELL_SIZE)
 
 
+
+typedef struct food {
+	int x;
+	int y;
+	unsigned int units;
+	pthread_mutex_t mtx;
+} food;
+
 typedef struct cell {
 	float 			food;			// food scent intensity
 	float 			home;			// anthill scent intensity
@@ -19,7 +27,6 @@ typedef struct cell {
 	unsigned int 	backoff_home;	// cooldown before food pheromone can be deployed 
 	pthread_mutex_t mtx;
 } cell;
-
 
 typedef struct visual_scan {
 	bool 			success;		// actual target detected?
@@ -36,6 +43,8 @@ typedef struct smell_scan {
 } smell_scan;
 
 extern cell ph[PH_SIZE_H][PH_SIZE_V];
+extern food foods[MAX_FOOD_SRC];
+extern unsigned int n_food_src;
 
 visual_scan find_target_visually(int x, int y, int radius, phero_type type);
 
@@ -43,9 +52,14 @@ smell_scan find_smell_direction(int x, int y, int orientation, int radius, scan_
 
 void deploy_pheromone(unsigned int id, int x, int y, phero_type type, float value);
 
-unsigned int start_pheromones();
+unsigned int start_pheromones(void);
 
-void stop_pheromones();
+void stop_pheromones(void);
 
+void init_foods(void);
+
+int consume_food(int x, int y);
+
+int deploy_food(int x, int y);
 
 #endif

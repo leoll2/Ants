@@ -12,9 +12,10 @@
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
 
-int tid;			// thread id
-
+int tid;			// pheromone decay thread id
 cell ph[PH_SIZE_H][PH_SIZE_V];
+food foods[MAX_FOOD_SRC];
+unsigned int n_food_src;
 
 
 void deploy_pheromone(unsigned int id, int x, int y, phero_type type, float value) {
@@ -60,10 +61,17 @@ visual_scan find_target_visually(int x, int y, int radius, phero_type type) {
 
 	switch (type) {
 		case FOOD:
-			if (hypot(x - FOOD_X, y - FOOD_Y) <= radius) {
-				res.success = true;
-				res.target_x = FOOD_X;
-				res.target_y = FOOD_Y;
+			for (int i = 0; i < MAX_FOOD_SRC; ++i) {
+				pthread_mutex_lock(&foods[i].mtx);
+				if (foods[i].units > 0 && hypot(foods[i].x - x, foods[i].y - y) <= radius) {
+					res.success = true;
+					res.target_x = foods[i].x;
+					res.target_y = foods[i].y;
+					pthread_mutex_unlock(&foods[i].mtx);
+					break;
+				} else {
+					pthread_mutex_unlock(&foods[i].mtx);
+				}
 			}
 			break;
 		case HOME:
@@ -180,7 +188,7 @@ void *decay_behaviour(void *arg) {
 }
 
 
-unsigned int start_pheromones() {
+unsigned int start_pheromones(void) {
 
 	// make sure CELL_SIZE divides the field dimensions
 	assert(FIELD_WIDTH  % CELL_SIZE == 0);
@@ -204,8 +212,71 @@ unsigned int start_pheromones() {
 	return 0;
 }
 
-void stop_pheromones() {
+
+void stop_pheromones(void) {
 
 	stop_thread(tid);
 	printf("Pheromones decay thread stopped.\n");
+}
+
+
+int consume_food(int x, int y) {
+
+	if ((x < 0) || (x >= FIELD_WIDTH) || (y < 0) || (y >= FIELD_HEIGHT))
+		return -2;
+
+	// For each food source
+	for (int i = 0; i < MAX_FOOD_SRC; ++i) {
+		pthread_mutex_lock(&foods[i].mtx);
+
+		// Check if it actually exists
+		if (foods[i].units == 0) {
+			pthread_mutex_unlock(&foods[i].mtx);
+			continue;
+		}
+
+		// Check if the coordinates match
+		if ((foods[i].x != x) || foods[i].y != y) {
+			pthread_mutex_unlock(&foods[i].mtx);
+			continue;
+		}
+
+		// Consume one unit of food
+		if (--foods[i].units == 0)
+			--n_food_src;
+		pthread_mutex_unlock(&foods[i].mtx);
+		return 0;
+	}
+	return -1;
+}
+
+
+int deploy_food(int x, int y) {
+
+	if ((x < 0) || (x >= FIELD_WIDTH) || (y < 0) || (y >= FIELD_HEIGHT))
+		return -2;
+
+	for (int i = 0; i < MAX_FOOD_SRC; ++i) {
+		pthread_mutex_lock(&foods[i].mtx);
+		if (foods[i].units == 0) {
+			foods[i].units = FOOD_UNITS;
+			foods[i].x = x;
+			foods[i].y = y;
+			++n_food_src;
+			pthread_mutex_unlock(&foods[i].mtx);
+			return 0;
+		}
+		pthread_mutex_unlock(&foods[i].mtx);
+	}
+
+	return -1;
+}
+
+
+void init_foods(void) {
+
+	for (int i = 0; i < MAX_FOOD_SRC; ++i) {
+		pthread_mutex_init(&foods[i].mtx, NULL);
+		foods[i].units = 0;
+	}
 }
