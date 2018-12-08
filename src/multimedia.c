@@ -189,15 +189,18 @@ void draw_stats_panelbox(void) {
 
     int x0 = FIELD_WIDTH;
     int y0 = 0;
-    char buf[20];
+    char buf[60];
 
     // Draw background and border
     rectfill(surface, FIELD_WIDTH, 0, SCREEN_W - 1, SCREEN_H - 1, COLOR_STATS_BORDER);
     rectfill(surface, FIELD_WIDTH + 2, 2, SCREEN_W - 3, SCREEN_H - 3, COLOR_STATS_PANEL);
 
-    sprintf(buf,"Ants: %d", n_ants);
-    textout_centre_ex(surface, font, buf, 
-            x0 + STATS_PANEL_W / 2, y0 + FIELD_HEIGHT / 2, COLOR_TEXT, COLOR_STATS_PANEL);
+    // Draw stats
+    sprintf(buf, "%-16s %d", "Ants:", n_ants);
+    textout_ex(surface, font, buf, x0 + 10, y0 + 10, COLOR_TEXT, COLOR_STATS_PANEL);
+
+    sprintf(buf, "%-16s %d", "Food sources:", n_food_src);
+    textout_ex(surface, font, buf, x0 + 10, y0 + 30, COLOR_TEXT, COLOR_STATS_PANEL);
 }
 
 
@@ -258,7 +261,11 @@ void draw_anthill(void) {
 
 void draw_food(void) {
 
-    draw_sprite(surface, foodbmp, FOOD_X - IMG_FOOD_SIZE / 2, FOOD_Y - IMG_FOOD_SIZE / 2);
+    for (int i = 0; i < MAX_FOOD_SRC; ++i) {
+        if (foods[i].units > 0)
+            draw_sprite(surface, foodbmp, 
+                    foods[i].x - IMG_FOOD_SIZE / 2, foods[i].y - IMG_FOOD_SIZE / 2);
+    }
 }
 
 
@@ -266,8 +273,6 @@ void draw_food(void) {
 void *graphics_behaviour(void *arg) {
 
     clear_field();
-    draw_toolbar();
-    draw_stats_panelbox();
 
     // Draw anthill
     draw_anthill();
@@ -283,6 +288,9 @@ void *graphics_behaviour(void *arg) {
     for (int i = 0; i < PH_SIZE_H; ++i)
         for (int j = 0; j < PH_SIZE_V; ++j)
             draw_pheromone(i, j);
+
+    draw_toolbar();
+    draw_stats_panelbox();
 
     show_mouse(surface);
     
@@ -420,12 +428,17 @@ void *mouse_behaviour(void *arg) {
     action a = get_action();
 
     switch(mbutton) {
-        int ant_id;
+        int ant_id, ret;
         case 1:     // Left-click
             switch(a) {
                 case ADD_FOOD:
-                    printf("Add food to be implemented!\n");
-                    set_action(IDLE);
+                    ret = deploy_food(x, y);
+                    if (ret == 0) {
+                        snprintf(current_message, 80, "%s", "Food placed!");
+                        set_action(IDLE);
+                    } else if (ret == -1) {
+                        snprintf(current_message, 80, "%s", "There is already enough food");
+                    }
                     break;
                 case KILL_ANT:
                     ant_id = get_ant_id_by_pos(x, y);
