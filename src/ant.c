@@ -205,7 +205,6 @@ unsigned int allocate_ant_id(void) {
 		++i;
 
 	ants[i].alive = true;
-	//pthread_mutex_init(&ants[i].mtx, NULL);	//moved in init_ants
 	++n_ants;
 
 	pthread_mutex_unlock(&ants_mtx);
@@ -220,7 +219,6 @@ void deallocate_ant_id(unsigned int id) {
 	pthread_mutex_lock(&ants_mtx);
 	--n_ants;
 	ants[id].alive = false;
-	//pthread_mutex_destroy(&ants[id].mtx);
 	pthread_mutex_unlock(&ants_mtx);
 }
 
@@ -304,6 +302,16 @@ void kill_ants(void) {
 	printf("Finished killing ants \n");
 }
 
+
+
+int get_ant_id_by_pos(int x, int y) {
+
+	for (int i = 0; i < POP_SIZE_MAX; ++i) {
+		if (ants[i].alive && hypot(x - ants[i].pos.x, y - ants[i].pos.y) < 10)
+			return i;
+	}
+	return -1;
+}
 
 
 void init_ants_manager(void) {

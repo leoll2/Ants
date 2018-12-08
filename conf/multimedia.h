@@ -5,7 +5,7 @@
 /* ======================== 
 *  ======== COLORS ========
 *  ======================== */
-#define TOOLBAR_H 		100     // height of menu area
+#define TOOLBAR_H 		116     // height of menu area
 #define STATS_PANEL_W 	250     // width of status window
 #define ICON_SIZE		40		// size of toolbar icon
 

@@ -43,6 +43,7 @@ int spawn_ant(void);
 unsigned int spawn_ants(unsigned int n_ants);
 int kill_ant(unsigned int i);
 void kill_ants(void);
+int get_ant_id_by_pos(int x, int y);
 
 
 #endif

@@ -24,6 +24,7 @@
 
 pthread_cond_t terminate = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t terminate_mtx = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t action_mtx = PTHREAD_MUTEX_INITIALIZER;
 
 unsigned int graphics_tid, keyboard_tid, mouse_tid;
 BITMAP* surface;
@@ -44,13 +45,15 @@ char* action_keybind[N_ACTIONS] = {
     "ESC"
 };
 
-char* action_message[N_ACTIONS] = {
-    "Enjoy the simulation!",
-    "Left-click on the field to add food!",
-    "Left-click on the field to add an ant!",
-    "Left-click on an ant to kill it!",
-    "Closing..."
+char* action_desc[N_ACTIONS] = {
+    "None",
+    "Add food",
+    "Add ant",
+    "Kill ant",
+    "Quit"
 };
+
+char current_message[80];
 
 typedef struct icon {
     int x;
@@ -80,6 +83,23 @@ unsigned int angle_float_to_256(float angle) {
 }
 
 
+action get_action(void) {
+
+    action a;
+    pthread_mutex_lock(&action_mtx);
+    a = current_action;
+    pthread_mutex_unlock(&action_mtx);
+    return a;
+}
+
+void set_action(action a) {
+
+    pthread_mutex_lock(&action_mtx);
+    current_action = a;
+    pthread_mutex_unlock(&action_mtx);
+}
+
+
 void init_icons() {
 
     int left_padding = (FIELD_WIDTH - (2 * N_ACTIONS - 1) * ICON_SIZE) / 2;
@@ -106,7 +126,9 @@ unsigned int init_graphics() {
     foodbmp = load_bitmap(FOOD_PATH, NULL);
     antbmp = load_bitmap(ANT_PATH, NULL);
     anthillbmp = load_bitmap(HOME_PATH, NULL);
+
     init_icons();
+    snprintf(current_message, 80, "%s", "Enjoy the simulation!");
 
     clear_to_color(surface, COLOR_GREEN);
     blit(surface, screen, 0, 0, 0, 0, SCREEN_W, SCREEN_H);
@@ -127,13 +149,16 @@ void draw_toolbar(void) {
     int x0 = 0;
     int y0 = FIELD_HEIGHT;
 
+    action a = get_action();
+
     // Draw background and border
     rectfill(surface, 0, FIELD_HEIGHT, FIELD_WIDTH, SCREEN_H - 1, COLOR_TOOLBAR_BORDER);
     rectfill(surface, 2, FIELD_HEIGHT + 2, FIELD_WIDTH - 2, SCREEN_H - 3, COLOR_TOOLBAR);
 
-    // Draw icons and their keybind
+    // Display toolbar elements
     for (int i = 0; i < N_ACTIONS; i++) {
-        if (current_action == i) {
+        // Draw icon
+        if (a == i) {
             rectfill(surface, icons[i].x - 3, icons[i].y - 3, 
                     icons[i].x + ICON_SIZE + 3, icons[i].y + ICON_SIZE + 3, COLOR_ICON_BORDER);
             rectfill(surface, icons[i].x, icons[i].y, 
@@ -144,12 +169,17 @@ void draw_toolbar(void) {
         }
         draw_sprite(surface, icons[i].bmp, icons[i].x, icons[i].y);
 
+        // Draw keybind
         textout_centre_ex(surface, font, action_keybind[i], 
-            icons[i].x + ICON_SIZE / 2, icons[i].y + ICON_SIZE + 7, COLOR_TEXT, COLOR_TOOLBAR);
+            icons[i].x + ICON_SIZE / 2, icons[i].y - 12, COLOR_TEXT, COLOR_TOOLBAR);
+
+        // Draw description
+        textout_centre_ex(surface, font, action_desc[i], 
+            icons[i].x + ICON_SIZE / 2, icons[i].y + ICON_SIZE + 8, COLOR_TEXT, COLOR_TOOLBAR);
     }
 
-    // Print the action message
-    textout_centre_ex(surface, font, action_message[current_action], 
+    // Print the current message
+    textout_centre_ex(surface, font, current_message, 
             x0 + FIELD_WIDTH / 2, y0 + 7, COLOR_TEXT, COLOR_TOOLBAR);
 }
 
@@ -253,6 +283,8 @@ void *graphics_behaviour(void *arg) {
     for (int i = 0; i < PH_SIZE_H; ++i)
         for (int j = 0; j < PH_SIZE_V; ++j)
             draw_pheromone(i, j);
+
+    show_mouse(surface);
     
     blit(surface, screen, 0, 0, 0, 0, SCREEN_W, SCREEN_H);
 }
@@ -302,12 +334,15 @@ void *keyboard_behaviour(void *arg) {
 
     int key;
     char ascii, scan;
+    int ret;
 
     while (keypressed()) {
+        action a = get_action();
         get_keycodes(&scan, &ascii);
         switch (scan) {
             case KEY_ESC:
-                current_action = EXIT;
+                set_action(EXIT);
+                snprintf(current_message, 80, "%s", "Closing...");
                 pthread_mutex_lock(&terminate_mtx);
                 pthread_cond_signal(&terminate);
                 pthread_mutex_unlock(&terminate_mtx);
@@ -316,16 +351,23 @@ void *keyboard_behaviour(void *arg) {
                 printf("Pressed spacebar\n");
                 break;
             case KEY_Q:
-                current_action = IDLE;
+                set_action(IDLE);
+                snprintf(current_message, 80, "%s", "Enjoy the simulation!");
                 break;
             case KEY_W:
-                current_action = ADD_FOOD;
+                set_action(ADD_FOOD);
+                snprintf(current_message, 80, "%s", "Left-click on the field to add food");
                 break;
             case KEY_E:
-                current_action = ADD_ANT;
+                set_action(ADD_ANT);
+                if (spawn_ant() == 0)
+                    snprintf(current_message, 80, "%s", "Ant spawned!");
+                else
+                    snprintf(current_message, 80, "%s", "Failed to spawn a new ant (too many)");
                 break;
             case KEY_R:
-                current_action = KILL_ANT;
+                set_action(KILL_ANT);
+                snprintf(current_message, 80, "%s", "Left-click on the ant to kill");
                 break;
             default:
                 printf("Press ESC to quit!\n");
@@ -375,9 +417,26 @@ void *mouse_behaviour(void *arg) {
     } else
         return NULL;
 
+    action a = get_action();
+
     switch(mbutton) {
+        int ant_id;
         case 1:     // Left-click
-            printf("Left click at coords(%d, %d)!\n", x, y);
+            switch(a) {
+                case ADD_FOOD:
+                    printf("Add food to be implemented!\n");
+                    set_action(IDLE);
+                    break;
+                case KILL_ANT:
+                    ant_id = get_ant_id_by_pos(x, y);
+                    if (ant_id >= 0 && kill_ant(ant_id) > 0) {
+                        snprintf(current_message, 80, "%s", "Killed ant!");
+                        set_action(IDLE);
+                    }
+                    break;
+                default:
+                break;
+            }
             break;
         case 2:     // Right-click
             printf("Right click at coords(%d, %d)!\n", x, y);
@@ -406,6 +465,7 @@ unsigned int start_mouse(void) {
         mouse_tid = ret;
         printf("Initialized the mouse thread with id #%d.\n", mouse_tid);
     }
+
     return 0;
 }
 
