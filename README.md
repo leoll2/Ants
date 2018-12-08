@@ -12,10 +12,11 @@ This application requires Allegro4 to run. The suggested way to install is:
 
 ## Download
 
-`git clone https://https://github.com/leoll2/RealTime`
+`git clone https://https://github.com/leoll2/RealTime.git`
 
 ## Compile
 
+`mkdir bin build`
 `make all`
 
 ## Launch
