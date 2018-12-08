@@ -6,8 +6,6 @@
 *  ======== COLORS ========
 *  ======================== */
 #define TOOLBAR_H 		100     // height of menu area
-//#define TOOLBAR_W 		500     // width of menu area
-//#define STATS_PANEL_H	540     // height of status window
 #define STATS_PANEL_W 	250     // width of status window
 #define ICON_SIZE		40		// size of toolbar icon
 
@@ -20,10 +18,17 @@
 #define COLOR_BLUE      makecol(0x00,0x00,0xFF)
 #define COLOR_BLACK		makecol(0x00,0x00,0x00)
 #define COLOR_WHITE		makecol(0xFF,0xFF,0xFF)
+#define COLOR_BROWN		makecol(0x68,0x47,0x14)
+#define COLOR_SAND		makecol(0xFF,0xF3,0xC3)
 
-#define COLOR_TOOLBAR		COLOR_WHITE
-#define COLOR_ICON_BORDER	COLOR_BLUE
-#define COLOR_TEXT			COLOR_BLUE
+#define COLOR_TEXT				COLOR_BROWN
+
+#define COLOR_TOOLBAR			COLOR_SAND
+#define COLOR_TOOLBAR_BORDER	COLOR_BROWN
+#define COLOR_ICON_BORDER		COLOR_BROWN
+
+#define COLOR_STATS_PANEL		COLOR_SAND
+#define COLOR_STATS_BORDER		COLOR_BROWN
 
 
 /* ======================== 

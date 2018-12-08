@@ -37,10 +37,10 @@ typedef enum action {IDLE, ADD_FOOD, ADD_ANT, KILL_ANT, EXIT, N_ACTIONS} action;
 action current_action = IDLE;
 
 char* action_keybind[N_ACTIONS] = {
-    "A",
-    "B",
-    "C",
-    "D",
+    "Q",
+    "W",
+    "E",
+    "R",
     "ESC"
 };
 
@@ -127,8 +127,9 @@ void draw_toolbar(void) {
     int x0 = 0;
     int y0 = FIELD_HEIGHT;
 
-    // Reset background
-    rectfill(surface, 0, FIELD_HEIGHT, FIELD_WIDTH, SCREEN_H, COLOR_TOOLBAR);
+    // Draw background and border
+    rectfill(surface, 0, FIELD_HEIGHT, FIELD_WIDTH, SCREEN_H - 1, COLOR_TOOLBAR_BORDER);
+    rectfill(surface, 2, FIELD_HEIGHT + 2, FIELD_WIDTH - 2, SCREEN_H - 3, COLOR_TOOLBAR);
 
     // Draw icons and their keybind
     for (int i = 0; i < N_ACTIONS; i++) {
@@ -160,11 +161,13 @@ void draw_stats_panelbox(void) {
     int y0 = 0;
     char buf[20];
 
-    rectfill(surface, FIELD_WIDTH, 0, SCREEN_W, SCREEN_H, COLOR_BLACK);
+    // Draw background and border
+    rectfill(surface, FIELD_WIDTH, 0, SCREEN_W - 1, SCREEN_H - 1, COLOR_STATS_BORDER);
+    rectfill(surface, FIELD_WIDTH + 2, 2, SCREEN_W - 3, SCREEN_H - 3, COLOR_STATS_PANEL);
 
     sprintf(buf,"Ants: %d", n_ants);
     textout_centre_ex(surface, font, buf, 
-            x0 + STATS_PANEL_W / 2, y0 + FIELD_HEIGHT / 2, COLOR_RED, 1);
+            x0 + STATS_PANEL_W / 2, y0 + FIELD_HEIGHT / 2, COLOR_TEXT, COLOR_STATS_PANEL);
 }
 
 
@@ -312,16 +315,16 @@ void *keyboard_behaviour(void *arg) {
             case KEY_SPACE:
                 printf("Pressed spacebar\n");
                 break;
-            case KEY_A:
+            case KEY_Q:
                 current_action = IDLE;
                 break;
-            case KEY_B:
+            case KEY_W:
                 current_action = ADD_FOOD;
                 break;
-            case KEY_C:
+            case KEY_E:
                 current_action = ADD_ANT;
                 break;
-            case KEY_D:
+            case KEY_R:
                 current_action = KILL_ANT;
                 break;
             default:
