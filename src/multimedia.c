@@ -12,6 +12,11 @@
 #define ANT_PATH        "img/ant.bmp"
 #define FOOD_PATH       "img/apple.bmp"
 #define HOME_PATH       "img/anthill.bmp"
+#define ICON_IDLE       "img/icon/idle.bmp"
+#define ICON_ADD_FOOD   "img/icon/addfood.bmp"
+#define ICON_ADD_ANT    "img/icon/addant.bmp"
+#define ICON_KILL_ANT   "img/icon/killant.bmp"
+#define ICON_EXIT       "img/icon/exit.bmp"
 
 #define IMG_FOOD_SIZE       40
 #define IMG_ANTHILL_SIZE    60
@@ -20,9 +25,49 @@
 pthread_cond_t terminate = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t terminate_mtx = PTHREAD_MUTEX_INITIALIZER;
 
-unsigned int graphics_tid, keyboard_tid;
-BITMAP* surface = NULL;
-BITMAP* fieldbmp = NULL;
+unsigned int graphics_tid, keyboard_tid, mouse_tid;
+BITMAP* surface;
+BITMAP* fieldbmp;
+BITMAP *antbmp;
+BITMAP *foodbmp;
+BITMAP *anthillbmp;
+
+typedef enum action {IDLE, ADD_FOOD, ADD_ANT, KILL_ANT, EXIT, N_ACTIONS} action;
+
+action current_action = IDLE;
+
+char* action_keybind[N_ACTIONS] = {
+    "A",
+    "B",
+    "C",
+    "D",
+    "ESC"
+};
+
+char* action_message[N_ACTIONS] = {
+    "Enjoy the simulation!",
+    "Left-click on the field to add food!",
+    "Left-click on the field to add an ant!",
+    "Left-click on an ant to kill it!",
+    "Closing..."
+};
+
+typedef struct icon {
+    int x;
+    int y;
+    BITMAP* bmp;
+} icon;
+
+char* icon_bmp_paths[N_ACTIONS] = {
+    ICON_IDLE,
+    ICON_ADD_FOOD,
+    ICON_ADD_ANT,
+    ICON_KILL_ANT,
+    ICON_EXIT
+};
+
+icon icons[N_ACTIONS];
+
 
 
 /* Converts the format of an angle.:
@@ -35,19 +80,33 @@ unsigned int angle_float_to_256(float angle) {
 }
 
 
-unsigned int init_allegro() {
+void init_icons() {
+
+    int left_padding = (FIELD_WIDTH - (2 * N_ACTIONS - 1) * ICON_SIZE) / 2;
+
+    for (int i = 0; i < N_ACTIONS; i++) {
+        icons[i].x = left_padding + 2 * i * ICON_SIZE - ICON_SIZE / 2;
+        icons[i].y = FIELD_HEIGHT + TOOLBAR_H / 2 - ICON_SIZE / 2;
+        icons[i].bmp = load_bitmap(icon_bmp_paths[i], NULL);
+    }
+}
+
+unsigned int init_graphics() {
 
 	if (allegro_init()!=0)
 		return 1;
-
-    install_keyboard();
 
     set_color_depth(32);
     if (set_gfx_mode(GFX_AUTODETECT_WINDOWED, FIELD_WIDTH + STATS_PANEL_W, 
                 FIELD_HEIGHT + TOOLBAR_H , 0, 0))
         return 2;
+
     surface = create_bitmap(SCREEN_W, SCREEN_H);
     fieldbmp = load_bitmap(BG_PATH, NULL);
+    foodbmp = load_bitmap(FOOD_PATH, NULL);
+    antbmp = load_bitmap(ANT_PATH, NULL);
+    anthillbmp = load_bitmap(HOME_PATH, NULL);
+    init_icons();
 
     clear_to_color(surface, COLOR_GREEN);
     blit(surface, screen, 0, 0, 0, 0, SCREEN_W, SCREEN_H);
@@ -56,7 +115,7 @@ unsigned int init_allegro() {
 }
 
 
-void clear_to_background() {
+void clear_field() {
 
     blit(fieldbmp, surface, 0, 0, 0, 0, fieldbmp->w, fieldbmp->h);
 }
@@ -68,10 +127,29 @@ void draw_toolbar(void) {
     int x0 = 0;
     int y0 = FIELD_HEIGHT;
 
-    rectfill(surface, 0, FIELD_HEIGHT, FIELD_WIDTH, SCREEN_H, COLOR_BLACK);
+    // Reset background
+    rectfill(surface, 0, FIELD_HEIGHT, FIELD_WIDTH, SCREEN_H, COLOR_TOOLBAR);
 
-    textout_centre_ex(surface, font, "TOOLBAR", 
-            x0 + FIELD_WIDTH / 2 , y0 + TOOLBAR_H / 2, COLOR_RED, 1);
+    // Draw icons and their keybind
+    for (int i = 0; i < N_ACTIONS; i++) {
+        if (current_action == i) {
+            rectfill(surface, icons[i].x - 3, icons[i].y - 3, 
+                    icons[i].x + ICON_SIZE + 3, icons[i].y + ICON_SIZE + 3, COLOR_ICON_BORDER);
+            rectfill(surface, icons[i].x, icons[i].y, 
+                    icons[i].x + ICON_SIZE, icons[i].y + ICON_SIZE, COLOR_TOOLBAR);
+        } else {
+            rect(surface, icons[i].x - 1, icons[i].y - 1, 
+                    icons[i].x + ICON_SIZE + 1, icons[i].y + ICON_SIZE + 1, COLOR_ICON_BORDER);
+        }
+        draw_sprite(surface, icons[i].bmp, icons[i].x, icons[i].y);
+
+        textout_centre_ex(surface, font, action_keybind[i], 
+            icons[i].x + ICON_SIZE / 2, icons[i].y + ICON_SIZE + 7, COLOR_TEXT, COLOR_TOOLBAR);
+    }
+
+    // Print the action message
+    textout_centre_ex(surface, font, action_message[current_action], 
+            x0 + FIELD_WIDTH / 2, y0 + 7, COLOR_TEXT, COLOR_TOOLBAR);
 }
 
 
@@ -119,7 +197,7 @@ static inline void draw_pheromone(int i, int j) {
 }
 
 
-static inline void draw_ant(BITMAP *antbmp, int i) {
+static inline void draw_ant(int i) {
 
     ant *a = &ants[i];
     pthread_mutex_lock(&a->mtx);
@@ -138,14 +216,14 @@ static inline void draw_ant(BITMAP *antbmp, int i) {
 
 
 
-void draw_anthill(BITMAP *anthillbmp) {
+void draw_anthill(void) {
 
     draw_sprite(surface, anthillbmp, HOME_X - IMG_ANTHILL_SIZE / 2, HOME_Y - IMG_ANTHILL_SIZE / 2);
 }
 
 
 
-void draw_food(BITMAP *foodbmp) {
+void draw_food(void) {
 
     draw_sprite(surface, foodbmp, FOOD_X - IMG_FOOD_SIZE / 2, FOOD_Y - IMG_FOOD_SIZE / 2);
 }
@@ -154,26 +232,19 @@ void draw_food(BITMAP *foodbmp) {
 
 void *graphics_behaviour(void *arg) {
 
-    BITMAP *antbmp;
-    antbmp = load_bitmap(ANT_PATH, NULL);
-    BITMAP *foodbmp;
-    foodbmp = load_bitmap(FOOD_PATH, NULL);
-    BITMAP *anthillbmp;
-    anthillbmp = load_bitmap(HOME_PATH, NULL);
-
-    clear_to_background();
+    clear_field();
     draw_toolbar();
     draw_stats_panelbox();
 
     // Draw anthill
-    draw_anthill(anthillbmp);
+    draw_anthill();
 
     // Draw food
-    draw_food(foodbmp);
+    draw_food();
 
     // Draw ants
     for (int i = 0; i < POP_SIZE_MAX; ++i)
-        draw_ant(antbmp, i);
+        draw_ant(i);
 
     // Draw pheromones
     for (int i = 0; i < PH_SIZE_H; ++i)
@@ -188,13 +259,13 @@ unsigned int start_graphics(void) {
 
     unsigned int ret;
 
-    ret = init_allegro();
+    ret = init_graphics();
     if (ret)
         return ret;
 
     ret = start_thread(graphics_behaviour, NULL, SCHED_FIFO,
             WCET_GRAPHICS, PRD_GRAPHICS, DL_GRAPHICS, PRIO_GRAPHICS);
-    if (graphics_tid < 0) {
+    if (ret < 0) {
         printf("Failed to initialize the graphics thread!\n");
         return 1;
     } else {
@@ -231,15 +302,27 @@ void *keyboard_behaviour(void *arg) {
 
     while (keypressed()) {
         get_keycodes(&scan, &ascii);
-        // TODO: FARE COSE IN BASE AI TASTI PREMUTI
         switch (scan) {
             case KEY_ESC:
+                current_action = EXIT;
                 pthread_mutex_lock(&terminate_mtx);
                 pthread_cond_signal(&terminate);
                 pthread_mutex_unlock(&terminate_mtx);
                 break;
             case KEY_SPACE:
                 printf("Pressed spacebar\n");
+                break;
+            case KEY_A:
+                current_action = IDLE;
+                break;
+            case KEY_B:
+                current_action = ADD_FOOD;
+                break;
+            case KEY_C:
+                current_action = ADD_ANT;
+                break;
+            case KEY_D:
+                current_action = KILL_ANT;
                 break;
             default:
                 printf("Press ESC to quit!\n");
@@ -252,9 +335,11 @@ unsigned int start_keyboard(void) {
 
     unsigned int ret;
 
+    install_keyboard();
+
     ret = start_thread(keyboard_behaviour, NULL, SCHED_FIFO,
             WCET_KEYBOARD, PRD_KEYBOARD, DL_KEYBOARD, PRIO_KEYBOARD);
-    if (keyboard_tid < 0) {
+    if (ret < 0) {
         printf("Failed to initialize the keyboard thread!\n");
         return 1;
     } else {
@@ -270,6 +355,62 @@ void stop_keyboard(void) {
 
     stop_thread(keyboard_tid);
     printf("Keyboard thread stopped.\n");
+}
+
+
+
+void *mouse_behaviour(void *arg) {
+
+    int x, y;
+    int mbutton;
+
+    // Check if any button is being clicked, else return
+    mbutton = mouse_b & 3;
+    if (mbutton) {
+        x = mouse_x;
+        y = mouse_y;
+    } else
+        return NULL;
+
+    switch(mbutton) {
+        case 1:     // Left-click
+            printf("Left click at coords(%d, %d)!\n", x, y);
+            break;
+        case 2:     // Right-click
+            printf("Right click at coords(%d, %d)!\n", x, y);
+            break;
+        case 3:     // Both clicks
+            printf("Both clicks at coords(%d, %d)!\n", x, y);
+            break;
+        default:
+            break;
+    }
+}
+
+
+unsigned int start_mouse(void) {
+
+    unsigned int ret;
+
+    install_mouse();
+
+    ret = start_thread(mouse_behaviour, NULL, SCHED_FIFO,
+            WCET_MOUSE, PRD_MOUSE, DL_MOUSE, PRIO_MOUSE);
+    if (ret < 0) {
+        printf("Failed to initialize the mouse thread!\n");
+        return 1;
+    } else {
+        mouse_tid = ret;
+        printf("Initialized the mouse thread with id #%d.\n", mouse_tid);
+    }
+    return 0;
+}
+
+
+void stop_mouse(void) {
+
+    stop_thread(mouse_tid);
+    printf("Mouse thread stopped.\n");
 }
 
 

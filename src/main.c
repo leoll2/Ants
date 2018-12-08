@@ -30,8 +30,9 @@ int main(int argc, char **argv) {
     	return 1;
     if (start_keyboard())
         return 1;
+    if (start_mouse())
+        return 1;
 
-    //int k = readkey();      // TODO: rimpiazza con una wait_termination(), la quale join il thread tastiera
     wait_for_termination();
 
     kill_ants();
