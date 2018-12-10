@@ -17,6 +17,7 @@ This application requires Allegro4 to run. The suggested way to install is:
 ## Compile
 
 `mkdir bin build`
+
 `make all`
 
 ## Launch
