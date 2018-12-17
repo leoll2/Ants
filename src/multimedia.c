@@ -216,6 +216,7 @@ void draw_selected_ant_stats(int x0, int y0) {
 
     char buf[60];
     int sel_ant;
+    unsigned int sel_tid;
     position sel_pos;
     float sel_aud;
     float sel_exc;
@@ -242,6 +243,7 @@ void draw_selected_ant_stats(int x0, int y0) {
             return;
         }
             
+        sel_tid = ants[sel_ant].tid;
         sel_pos = ants[sel_ant].pos;
         sel_int = ants[sel_ant].interest;
         sel_beh = ants[sel_ant].behaviour;
@@ -264,6 +266,8 @@ void draw_selected_ant_stats(int x0, int y0) {
     textout_ex(surface, font, buf, x0 + 10, STATS_ANT_OFF_H + 140, COLOR_TEXT, COLOR_STATS_PANEL);
     sprintf(buf, "%-16s %f", "Excitement:", sel_exc);
     textout_ex(surface, font, buf, x0 + 10, STATS_ANT_OFF_H + 160, COLOR_TEXT, COLOR_STATS_PANEL);
+    sprintf(buf, "%-16s %d", "Deadline misses:", how_many_dl_missed(sel_tid));
+    textout_ex(surface, font, buf, x0 + 10, STATS_ANT_OFF_H + 180, COLOR_TEXT, COLOR_STATS_PANEL);
 }
 
 
@@ -283,9 +287,16 @@ void draw_stats_panelbox(void) {
     // Print stats
     sprintf(buf, "%-16s %d", "Ants:", n_ants);
     textout_ex(surface, font, buf, x0 + 10, y0 + 40, COLOR_TEXT, COLOR_STATS_PANEL);
-
     sprintf(buf, "%-16s %d", "Food sources:", n_food_src);
     textout_ex(surface, font, buf, x0 + 10, y0 + 60, COLOR_TEXT, COLOR_STATS_PANEL);
+    sprintf(buf, "%-16s", "Deadline misses");
+    textout_ex(surface, font, buf, x0 + 10, y0 + 80, COLOR_TEXT, COLOR_STATS_PANEL);
+    sprintf(buf, "%-16s %d", " - Graphics:", how_many_dl_missed(graphics_tid));
+    textout_ex(surface, font, buf, x0 + 10, y0 + 100, COLOR_TEXT, COLOR_STATS_PANEL);
+    sprintf(buf, "%-16s %d", " - Mouse:", how_many_dl_missed(mouse_tid));
+    textout_ex(surface, font, buf, x0 + 10, y0 + 120, COLOR_TEXT, COLOR_STATS_PANEL);
+    sprintf(buf, "%-16s %d", " - Keyboard:", how_many_dl_missed(keyboard_tid));
+    textout_ex(surface, font, buf, x0 + 10, y0 + 140, COLOR_TEXT, COLOR_STATS_PANEL);
 
     draw_selected_ant_stats(x0, y0);
 }

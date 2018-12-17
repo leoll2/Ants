@@ -40,4 +40,6 @@ int start_thread(
 
 int stop_thread(unsigned int id);
 
+int how_many_dl_missed(unsigned int id);
+
 #endif

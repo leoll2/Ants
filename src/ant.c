@@ -147,7 +147,7 @@ void *ant_routine(void *arg) {
 			}
 			break;
 		case EXPLOITING:
-			// Is the target near enough to be seen?
+			// Is the target close enough to be seen?
 			v_scan = find_target_visually(a->pos.x, a->pos.y, VISION_RADIUS, a->interest);
 			if (v_scan.success) {
 				if (tracking_step(a, v_scan.target_x, v_scan.target_y))
@@ -167,7 +167,7 @@ void *ant_routine(void *arg) {
 				}
 			} else if (s_scan.success && s_scan.local_optimum) {
 				// Explore to escape from local minimum
-				a->expl_desire = 3;
+				a->expl_desire = 10;
 				a->behaviour = EXPLORING;
 			} else {
 				advancement_step(a);
@@ -233,7 +233,7 @@ int spawn_ant(void) {
 
 	a_id = allocate_ant_id();
 	if (a_id == POP_SIZE_MAX) {
-		printf("Failed to spawn a new ant (ants limit reached)\n");
+		//printf("Failed to spawn a new ant (ants limit reached)\n");
 		return -1;
 	}
 
@@ -243,7 +243,7 @@ int spawn_ant(void) {
 	if (t_id < 0) {
 		pthread_mutex_unlock(&ants[a_id].mtx);
 		deallocate_ant_id(a_id);
-		printf("Failed to spawn a new ant (threads limit reached)\n");
+		//printf("Failed to spawn a new ant (threads limit reached)\n");
 		return -2;
 	} else {
 		init_ant(&ants[a_id], t_id);
@@ -291,13 +291,8 @@ unsigned int spawn_ants(unsigned int n) {
 
 void kill_ants(void) {
 
-	printf("Start killing ants \n");
-
-	for (int i = 0; i < POP_SIZE_MAX; ++i) {
+	for (int i = 0; i < POP_SIZE_MAX; ++i)
 		kill_ant(i);
-	}
-
-	printf("Finished killing ants \n");
 }
 
 

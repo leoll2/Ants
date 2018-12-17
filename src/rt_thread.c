@@ -273,3 +273,9 @@ int stop_thread(unsigned int id) {
 
 	return 0;
 }
+
+
+int how_many_dl_missed(unsigned int id) {
+
+	return rt_threads[id].dl_missed;
+}
