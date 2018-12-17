@@ -13,8 +13,8 @@
 #define DEFAULT_POP			8		// initial population by default
 
 #define WCET_ANTS		50
-#define PRD_ANTS		100
-#define DL_ANTS			80
+#define PRD_ANTS		50
+#define DL_ANTS			50
 #define PRIO_ANTS		20
 
 

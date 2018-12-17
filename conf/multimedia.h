@@ -34,19 +34,19 @@
 /* ======================== 
 *  ======== TASKS =========
 *  ======================== */
-#define WCET_GRAPHICS		60
-#define PRD_GRAPHICS		100
-#define DL_GRAPHICS			80
+#define WCET_GRAPHICS		50
+#define PRD_GRAPHICS		50
+#define DL_GRAPHICS			50
 #define PRIO_GRAPHICS		30
 
 #define WCET_KEYBOARD		10
 #define PRD_KEYBOARD		200
 #define DL_KEYBOARD			200
-#define PRIO_KEYBOARD		20
+#define PRIO_KEYBOARD		10
 
 #define WCET_MOUSE			10
-#define PRD_MOUSE			100
-#define DL_MOUSE			100
+#define PRD_MOUSE			50
+#define DL_MOUSE			50
 #define PRIO_MOUSE			20
 
 #endif

@@ -25,6 +25,7 @@
 pthread_cond_t terminate = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t terminate_mtx = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t action_mtx = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t selected_ant_mtx = PTHREAD_MUTEX_INITIALIZER;
 
 unsigned int graphics_tid, keyboard_tid, mouse_tid;
 BITMAP* surface;
@@ -53,6 +54,8 @@ char* action_desc[N_ACTIONS] = {
     "Quit"
 };
 
+int selected_ant = -1;
+
 char current_message[80];
 
 typedef struct icon {
@@ -71,15 +74,34 @@ char* icon_bmp_paths[N_ACTIONS] = {
 
 icon icons[N_ACTIONS];
 
-
+/* ======================================
+*  ============== UTILITY ===============
+*  ====================================== */
 
 /* Converts the format of an angle.:
    From: [0, 2*PI) float counterclockwise origin positive x
-   To:   [0, 256)  uint  clockwise        origin positive y
- */
+   To:   [0, 256)  uint  clockwise        origin positive y */
 unsigned int angle_float_to_256(float angle) {
 
     return (64 - (unsigned int)round(128 * (angle / M_PI))) % 256;
+}
+
+
+int get_selected(void) {
+
+    int sel_ant;
+    pthread_mutex_lock(&selected_ant_mtx);
+    sel_ant = selected_ant;
+    pthread_mutex_unlock(&selected_ant_mtx);
+    return sel_ant;
+}
+
+
+void set_selected(int id) {
+
+    pthread_mutex_lock(&selected_ant_mtx);
+    selected_ant = id;
+    pthread_mutex_unlock(&selected_ant_mtx);
 }
 
 
@@ -98,6 +120,12 @@ void set_action(action a) {
     current_action = a;
     pthread_mutex_unlock(&action_mtx);
 }
+
+
+
+/* ======================================
+*  ============== GRAPHICS ==============
+*  ====================================== */
 
 
 void init_icons() {
@@ -184,6 +212,36 @@ void draw_toolbar(void) {
 }
 
 
+void draw_selected_ant_stats(int x0, int y0) {
+
+    char buf[60];
+    int sel_ant;
+    float sel_aud;
+    float sel_exc;
+
+    sel_ant = get_selected();
+
+    if (sel_ant >= 0 && sel_ant < POP_SIZE_MAX) {
+        pthread_mutex_lock(&ants[sel_ant].mtx);
+
+        if (!ants[sel_ant].alive) {
+            pthread_mutex_unlock(&ants[sel_ant].mtx);
+            set_selected(-1);
+            return;
+        }
+            
+        sel_aud = ants[sel_ant].audacity;
+        sel_exc = ants[sel_ant].excitement;
+        pthread_mutex_unlock(&ants[sel_ant].mtx);
+    } else
+        return;
+
+    sprintf(buf, "%-16s %f", "Audacity:", sel_aud);
+    textout_ex(surface, font, buf, x0 + 10, y0 + 60, COLOR_TEXT, COLOR_STATS_PANEL);
+    sprintf(buf, "%-16s %f", "Excitement:", sel_exc);
+    textout_ex(surface, font, buf, x0 + 10, y0 + 80, COLOR_TEXT, COLOR_STATS_PANEL);
+}
+
 
 void draw_stats_panelbox(void) {
 
@@ -201,8 +259,9 @@ void draw_stats_panelbox(void) {
 
     sprintf(buf, "%-16s %d", "Food sources:", n_food_src);
     textout_ex(surface, font, buf, x0 + 10, y0 + 30, COLOR_TEXT, COLOR_STATS_PANEL);
-}
 
+    draw_selected_ant_stats(x0, y0);
+}
 
 
 static inline unsigned int phero_radius(float value) {
@@ -251,7 +310,6 @@ static inline void draw_ant(int i) {
 }
 
 
-
 void draw_anthill(void) {
 
     draw_sprite(surface, anthillbmp, HOME_X - IMG_ANTHILL_SIZE / 2, HOME_Y - IMG_ANTHILL_SIZE / 2);
@@ -267,7 +325,6 @@ void draw_food(void) {
                     foods[i].x - IMG_FOOD_SIZE / 2, foods[i].y - IMG_FOOD_SIZE / 2);
     }
 }
-
 
 
 void *graphics_behaviour(void *arg) {
@@ -291,20 +348,15 @@ void *graphics_behaviour(void *arg) {
 
     draw_toolbar();
     draw_stats_panelbox();
-
-    show_mouse(surface);
     
     blit(surface, screen, 0, 0, 0, 0, SCREEN_W, SCREEN_H);
+    show_mouse(screen);
 }
 
 
 unsigned int start_graphics(void) {
 
     unsigned int ret;
-
-    ret = init_graphics();
-    if (ret)
-        return ret;
 
     ret = start_thread(graphics_behaviour, NULL, SCHED_FIFO,
             WCET_GRAPHICS, PRD_GRAPHICS, DL_GRAPHICS, PRIO_GRAPHICS);
@@ -319,12 +371,18 @@ unsigned int start_graphics(void) {
     return 0;
 }
 
+
 void stop_graphics(void) {
 
     stop_thread(graphics_tid);
     printf("Graphics thread stopped.\n");
 }
 
+
+
+/* ======================================
+*  ============== KEYBOARD ==============
+*  ====================================== */
 
 
 void get_keycodes(char *scan, char *ascii) {
@@ -334,8 +392,6 @@ void get_keycodes(char *scan, char *ascii) {
     *ascii = k;     // extract ascii code
     *scan = k >> 8; // extract scan code
 }
-
-
 
 
 void *keyboard_behaviour(void *arg) {
@@ -388,8 +444,6 @@ unsigned int start_keyboard(void) {
 
     unsigned int ret;
 
-    install_keyboard();
-
     ret = start_thread(keyboard_behaviour, NULL, SCHED_FIFO,
             WCET_KEYBOARD, PRD_KEYBOARD, DL_KEYBOARD, PRIO_KEYBOARD);
     if (ret < 0) {
@@ -403,13 +457,17 @@ unsigned int start_keyboard(void) {
 }
 
 
-
 void stop_keyboard(void) {
 
     stop_thread(keyboard_tid);
     printf("Keyboard thread stopped.\n");
 }
 
+
+
+/* ======================================
+*  =============== MOUSE ================
+*  ====================================== */
 
 
 void *mouse_behaviour(void *arg) {
@@ -447,8 +505,15 @@ void *mouse_behaviour(void *arg) {
                         set_action(IDLE);
                     }
                     break;
+                case IDLE:
+                    ant_id = get_ant_id_by_pos(x, y);
+                    if (ant_id >= 0) {
+                        set_selected(ant_id);
+                    } else
+                        set_selected(-1);
+                    break;
                 default:
-                break;
+                    break;
             }
             break;
         case 2:     // Right-click
@@ -466,8 +531,6 @@ void *mouse_behaviour(void *arg) {
 unsigned int start_mouse(void) {
 
     unsigned int ret;
-
-    install_mouse();
 
     ret = start_thread(mouse_behaviour, NULL, SCHED_FIFO,
             WCET_MOUSE, PRD_MOUSE, DL_MOUSE, PRIO_MOUSE);
@@ -490,12 +553,36 @@ void stop_mouse(void) {
 }
 
 
+unsigned int init_multimedia() {
+
+    if (init_graphics())
+        return 1;
+
+    install_mouse();
+    install_keyboard();
+
+    if (start_graphics() || start_mouse() || start_keyboard())
+        return 1;
+
+    return 0;
+}
+
+
+void stop_multimedia() {
+
+    stop_keyboard();
+    stop_mouse();
+    stop_graphics();
+}
+
+
 void wait_for_termination(void) {
 
     pthread_mutex_lock(&terminate_mtx);
     pthread_cond_wait(&terminate, &terminate_mtx);
     pthread_mutex_unlock(&terminate_mtx);
 }
+
 
 void increment_ants_command(int k){
     if ( (k >> 8)  == KEY_LEFT)

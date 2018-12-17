@@ -10,8 +10,8 @@
 #define DECAY_FACTOR		0.98	// regulates pheromone evaporation (trail duration)
 
 #define WCET_DECAY			50
-#define PRD_DECAY			100
-#define DL_DECAY 			80
+#define PRD_DECAY			50
+#define DL_DECAY 			50
 #define PRIO_DECAY			20
 
 
