@@ -156,7 +156,7 @@ unsigned int init_graphics() {
     anthillbmp = load_bitmap(HOME_PATH, NULL);
 
     init_icons();
-    snprintf(current_message, 80, "%s", "Enjoy the simulation!");
+    snprintf(current_message, 80, "%s", "Left-click on an ant to view info about it");
 
     clear_to_color(surface, COLOR_GREEN);
     blit(surface, screen, 0, 0, 0, 0, SCREEN_W, SCREEN_H);
@@ -216,10 +216,22 @@ void draw_selected_ant_stats(int x0, int y0) {
 
     char buf[60];
     int sel_ant;
+    position sel_pos;
     float sel_aud;
     float sel_exc;
+    phero_type sel_int;
+    behaviour sel_beh;
+
+    hline(surface, FIELD_WIDTH, STATS_ANT_OFF_H, SCREEN_W - 1, COLOR_TOOLBAR_BORDER);
+    textout_centre_ex(surface, font, "ANT", 
+            x0 + (SCREEN_W - FIELD_WIDTH) / 2, STATS_ANT_OFF_H + 10, COLOR_TEXT, COLOR_STATS_PANEL);
 
     sel_ant = get_selected();
+    if (sel_ant >= 0)
+        sprintf(buf, "%-16s %d", "Selected: ", sel_ant);
+    else
+        sprintf(buf, "%-16s %s", "Selected: ", "none");
+    textout_ex(surface, font, buf, x0 + 10, STATS_ANT_OFF_H + 40, COLOR_TEXT, COLOR_STATS_PANEL);
 
     if (sel_ant >= 0 && sel_ant < POP_SIZE_MAX) {
         pthread_mutex_lock(&ants[sel_ant].mtx);
@@ -230,16 +242,28 @@ void draw_selected_ant_stats(int x0, int y0) {
             return;
         }
             
+        sel_pos = ants[sel_ant].pos;
+        sel_int = ants[sel_ant].interest;
+        sel_beh = ants[sel_ant].behaviour;
         sel_aud = ants[sel_ant].audacity;
         sel_exc = ants[sel_ant].excitement;
         pthread_mutex_unlock(&ants[sel_ant].mtx);
     } else
         return;
 
+    sprintf(buf, "%-16s (%d %d)", "Pos (x,y):", sel_pos.x, sel_pos.y);
+    textout_ex(surface, font, buf, x0 + 10, STATS_ANT_OFF_H + 60, COLOR_TEXT, COLOR_STATS_PANEL);
+    sprintf(buf, "%-16s %f", "Angle (deg):", 360 / TWO_PI * sel_pos.angle);
+    textout_ex(surface, font, buf, x0 + 10, STATS_ANT_OFF_H + 80, COLOR_TEXT, COLOR_STATS_PANEL);
+    sprintf(buf, "%-16s %s", "Activity:", ((sel_beh == EXPLORING) || (sel_beh == EXPLOITING)) ? "Searching" : 
+            (sel_beh == EATING ? "Eating" : "Resting"));
+    textout_ex(surface, font, buf, x0 + 10, STATS_ANT_OFF_H + 100, COLOR_TEXT, COLOR_STATS_PANEL);
+    sprintf(buf, "%-16s %s", "Looking for:", (sel_int == FOOD) ? "Food" : "Home");
+    textout_ex(surface, font, buf, x0 + 10, STATS_ANT_OFF_H + 120, COLOR_TEXT, COLOR_STATS_PANEL);
     sprintf(buf, "%-16s %f", "Audacity:", sel_aud);
-    textout_ex(surface, font, buf, x0 + 10, y0 + 60, COLOR_TEXT, COLOR_STATS_PANEL);
+    textout_ex(surface, font, buf, x0 + 10, STATS_ANT_OFF_H + 140, COLOR_TEXT, COLOR_STATS_PANEL);
     sprintf(buf, "%-16s %f", "Excitement:", sel_exc);
-    textout_ex(surface, font, buf, x0 + 10, y0 + 80, COLOR_TEXT, COLOR_STATS_PANEL);
+    textout_ex(surface, font, buf, x0 + 10, STATS_ANT_OFF_H + 160, COLOR_TEXT, COLOR_STATS_PANEL);
 }
 
 
@@ -253,12 +277,15 @@ void draw_stats_panelbox(void) {
     rectfill(surface, FIELD_WIDTH, 0, SCREEN_W - 1, SCREEN_H - 1, COLOR_STATS_BORDER);
     rectfill(surface, FIELD_WIDTH + 2, 2, SCREEN_W - 3, SCREEN_H - 3, COLOR_STATS_PANEL);
 
-    // Draw stats
+    textout_centre_ex(surface, font, "STATUS", 
+            x0 + (SCREEN_W - FIELD_WIDTH) / 2, y0 + 10, COLOR_TEXT, COLOR_STATS_PANEL);
+
+    // Print stats
     sprintf(buf, "%-16s %d", "Ants:", n_ants);
-    textout_ex(surface, font, buf, x0 + 10, y0 + 10, COLOR_TEXT, COLOR_STATS_PANEL);
+    textout_ex(surface, font, buf, x0 + 10, y0 + 40, COLOR_TEXT, COLOR_STATS_PANEL);
 
     sprintf(buf, "%-16s %d", "Food sources:", n_food_src);
-    textout_ex(surface, font, buf, x0 + 10, y0 + 30, COLOR_TEXT, COLOR_STATS_PANEL);
+    textout_ex(surface, font, buf, x0 + 10, y0 + 60, COLOR_TEXT, COLOR_STATS_PANEL);
 
     draw_selected_ant_stats(x0, y0);
 }
@@ -292,7 +319,7 @@ static inline void draw_pheromone(int i, int j) {
 }
 
 
-static inline void draw_ant(int i) {
+static inline void draw_ant(int i, bool selected) {
 
     ant *a = &ants[i];
     pthread_mutex_lock(&a->mtx);
@@ -301,6 +328,8 @@ static inline void draw_ant(int i) {
         if (antbmp != NULL) {
             rotate_sprite(surface, antbmp, (a->pos.x - antbmp->w/2),
                     (a->pos.y - antbmp->h/2), itofix(angle_float_to_256(a->pos.angle)));
+            if (selected)
+                circle(surface, a->pos.x, a->pos.y, 15, COLOR_RED);
         } else
             circlefill(surface, a->pos.x, a->pos.y, CELL_SIZE / 2, COLOR_RED);  // fallback
     }
@@ -338,8 +367,9 @@ void *graphics_behaviour(void *arg) {
     draw_food();
 
     // Draw ants
+    int sel_ant = get_selected();
     for (int i = 0; i < POP_SIZE_MAX; ++i)
-        draw_ant(i);
+        draw_ant(i, (i == sel_ant));
 
     // Draw pheromones
     for (int i = 0; i < PH_SIZE_H; ++i)
@@ -416,7 +446,7 @@ void *keyboard_behaviour(void *arg) {
                 break;
             case KEY_Q:
                 set_action(IDLE);
-                snprintf(current_message, 80, "%s", "Enjoy the simulation!");
+                snprintf(current_message, 80, "%s", "Left-click on an ant to view info about it");
                 break;
             case KEY_W:
                 set_action(ADD_FOOD);

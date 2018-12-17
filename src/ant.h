@@ -1,6 +1,7 @@
 #ifndef ANT_H
 #define ANT_H
 
+#include <math.h>
 #include <pthread.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -9,6 +10,8 @@
 #include "conf/field.h"
 #include "field.h"
 #include "rt_thread.h"
+
+extern const float TWO_PI;
 
 typedef enum behaviour {EXPLORING, EXPLOITING, EATING, RESTING} behaviour;
 

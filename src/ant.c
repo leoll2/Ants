@@ -1,4 +1,3 @@
-#include <math.h>
 #include <stdio.h>
 #include <allegro/keyboard.h>
 #include "ant.h"
@@ -27,7 +26,7 @@ void init_ant(ant *const a, int tid) {
 }
 
 
-void move_ant_random(ant *const a) {	// DEBUG PURPOSE
+void move_ant_random(ant *const a) {
 
 	a->pos.x = rand() % FIELD_WIDTH;
 	a->pos.y = rand() % FIELD_HEIGHT;
@@ -190,8 +189,7 @@ void *ant_routine(void *arg) {
 
 
 /* Allocates a previously unused ant structure and returns its index.
-*  If none is free, return POP_SIZE_MAX.
-*/
+*  If none is free, return POP_SIZE_MAX. */
 unsigned int allocate_ant_id(void) {
 
 	unsigned int i = 0;
@@ -227,8 +225,7 @@ void deallocate_ant_id(unsigned int id) {
 
 
 /* Add a new ant to the current population.
-*  Returns 0 if success, -1 if population is full, -2 if thread pool is full.
-*/
+*  Returns 0 if success, -1 if population is full, -2 if thread pool is full. */
 int spawn_ant(void) {
 
 	unsigned int a_id;		// id of the new ant (index in ants array)
@@ -279,8 +276,7 @@ int kill_ant(unsigned int i) {
 
 /* Spawns the specified number of ants. If there is not enough room for all,
 *  create as many as possible.
-*  Returns the number of successfully spawned ants.
-*/
+*  Returns the number of successfully spawned ants. */
 unsigned int spawn_ants(unsigned int n) {
 
 	for (int i = 0; i < n; ++i) {
@@ -309,7 +305,7 @@ void kill_ants(void) {
 int get_ant_id_by_pos(int x, int y) {
 
 	for (int i = 0; i < POP_SIZE_MAX; ++i) {
-		if (ants[i].alive && hypot(x - ants[i].pos.x, y - ants[i].pos.y) < 10)
+		if (ants[i].alive && hypot(x - ants[i].pos.x, y - ants[i].pos.y) < 15)
 			return i;
 	}
 	return -1;

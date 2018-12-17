@@ -3,11 +3,12 @@
 
 
 /* ======================== 
-*  ======== COLORS ========
+*  ====== DIMENSIONS ======
 *  ======================== */
-#define TOOLBAR_H 		116     // height of menu area
-#define STATS_PANEL_W 	250     // width of status window
-#define ICON_SIZE		40		// size of toolbar icon
+#define TOOLBAR_H 			116     // height of menu area
+#define STATS_PANEL_W 		250     // width of status window
+#define STATS_ANT_OFF_H		250		// vertical offset of ant details within stats panel
+#define ICON_SIZE			40		// size of toolbar icon
 
 
 /* ======================== 
