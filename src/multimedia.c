@@ -360,9 +360,10 @@ void draw_anthill(void) {
 void draw_food(void) {
 
     for (int i = 0; i < MAX_FOOD_SRC; ++i) {
-        if (foods[i].units > 0)
-            draw_sprite(surface, foodbmp, 
-                    foods[i].x - IMG_FOOD_SIZE / 2, foods[i].y - IMG_FOOD_SIZE / 2);
+        if (foods[i].units > 0) {
+            int scaled_size = (int)floor(IMG_FOOD_SIZE * ((double)foods[i].units / FOOD_UNITS));
+            stretch_sprite(surface, foodbmp, foods[i].x - scaled_size / 2, foods[i].y - scaled_size / 2, scaled_size, scaled_size);
+        }
     }
 }
 
