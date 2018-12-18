@@ -71,7 +71,8 @@ visual_scan find_target_visually(int x, int y, int radius, phero_type desired_ty
 					res.target_y = foods[i].y;
 					break;
 				case HOME:
-					res.oth_obj_found = true;
+					// slightly less than radius because of discretization, to prevent local optima outside detection circle
+					res.oth_obj_found = (hypot(foods[i].x - x, foods[i].y - y) <= (radius - CELL_SIZE)); 
 					break;
 				default:
 					printf("This should not happen! (unrecognized pheromone type)\n");
@@ -92,7 +93,8 @@ visual_scan find_target_visually(int x, int y, int radius, phero_type desired_ty
 				res.target_y = HOME_Y;
 				break;
 			case FOOD:
-				res.oth_obj_found = true;
+				// slightly less than radius (see above)
+				res.oth_obj_found = (hypot(x - HOME_X, y - HOME_Y) <= (radius - CELL_SIZE));
 				break;
 			default:
 				printf("This should not happen! (unrecognized pheromone type)\n");

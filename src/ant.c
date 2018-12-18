@@ -14,13 +14,13 @@ void init_ant(ant *const a, int tid) {
 
 	a->alive = true;
 	a->tid = (unsigned int)tid;
-	a->pos.x = 	HOME_X;
-	a->pos.y = 	HOME_Y;
-	a->pos.angle = rand() * TWO_PI;
+	a->pos.x = HOME_X;
+	a->pos.y = HOME_Y;
+	a->pos.angle = (double)rand() / RAND_MAX * TWO_PI;
 	a->interest = FOOD;
 	a->behaviour = RESTING;
 	a->excitement = 1.0;
-	a->audacity = AUDACITY;
+	a->audacity = (double)rand() / RAND_MAX * MAX_AUDACITY;
 	a->diverted = false;
 	a->expl_desire = 0;
 }
@@ -124,26 +124,31 @@ void *ant_routine(void *arg) {
 			reverse_direction(a);
 			a->interest = FOOD;
 			a->behaviour = EXPLOITING;
-			a->audacity *= AUDACITY_DISCOUNT;
 			a->excitement = 1.0;
 			break;
 		case EATING:
 			if (consume_food(a->pos.x, a->pos.y) == 0) {
 				reverse_direction(a);
 				a->interest = HOME;
-				a->audacity *= AUDACITY_DISCOUNT;
 				a->excitement = 1.0;
 			}
 			a->behaviour = EXPLOITING;
 			break;
 		case EXPLORING:
-			if (!a->diverted)
-				divert_direction(a);
-			advancement_step(a);
-			a->expl_desire--;
-			if (a->expl_desire == 0) {
-				a->diverted = false;
-				a->behaviour = EXPLOITING;
+			// Is the target close enough to be seen?
+			v_scan = find_target_visually(a->pos.x, a->pos.y, VISION_RADIUS, a->interest);
+			if (v_scan.success) {
+				if (tracking_step(a, v_scan.target_x, v_scan.target_y))
+					a->behaviour = (a->interest == FOOD) ? EATING : RESTING;
+				else
+					a->behaviour = EXPLOITING;
+			} else {
+				advancement_step(a);
+				a->expl_desire--;
+				if (a->expl_desire == 0) {
+					a->diverted = false;
+					a->behaviour = EXPLOITING;
+				}
 			}
 			break;
 		case EXPLOITING:
@@ -162,6 +167,7 @@ void *ant_routine(void *arg) {
 			);
 			if (s_scan.success && !s_scan.local_optimum) {
 				if (want_to_explore(a->audacity)) {
+					divert_direction(a);
 					a->expl_desire = EXPL_DURATION;
 					a->behaviour = EXPLORING;
 				} else {
@@ -169,7 +175,7 @@ void *ant_routine(void *arg) {
 				}
 			} else if (s_scan.success && s_scan.local_optimum) {
 				// Explore to escape from local minimum
-				a->expl_desire = 10;
+				a->expl_desire = 30;
 				a->behaviour = EXPLORING;
 			} else {
 				advancement_step(a);

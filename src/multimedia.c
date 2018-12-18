@@ -262,9 +262,9 @@ void draw_selected_ant_stats(int x0, int y0) {
     textout_ex(surface, font, buf, x0 + 10, STATS_ANT_OFF_H + 100, COLOR_TEXT, COLOR_STATS_PANEL);
     sprintf(buf, "%-16s %s", "Looking for:", (sel_int == FOOD) ? "Food" : "Home");
     textout_ex(surface, font, buf, x0 + 10, STATS_ANT_OFF_H + 120, COLOR_TEXT, COLOR_STATS_PANEL);
-    sprintf(buf, "%-16s %f", "Audacity:", sel_aud);
+    sprintf(buf, "%-16s %f", "Audacity(%):", sel_aud * 100);
     textout_ex(surface, font, buf, x0 + 10, STATS_ANT_OFF_H + 140, COLOR_TEXT, COLOR_STATS_PANEL);
-    sprintf(buf, "%-16s %f", "Excitement:", sel_exc);
+    sprintf(buf, "%-16s %f", "Excitement(%):", sel_exc * 100);
     textout_ex(surface, font, buf, x0 + 10, STATS_ANT_OFF_H + 160, COLOR_TEXT, COLOR_STATS_PANEL);
     sprintf(buf, "%-16s %d", "Deadline misses:", how_many_dl_missed(sel_tid));
     textout_ex(surface, font, buf, x0 + 10, STATS_ANT_OFF_H + 180, COLOR_TEXT, COLOR_STATS_PANEL);
