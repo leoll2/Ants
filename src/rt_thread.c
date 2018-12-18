@@ -179,8 +179,9 @@ void *rt_thr_body(void *const arg) {
 		tp->behaviour(tp->data);
 
 		// Check for deadline miss
-		if (missed_deadline(tp))
-			printf("Deadline missed by #%d. Total for this thread: %d\n", tid, tp->dl_missed);
+		if (missed_deadline(tp)) {
+			// < Corrective actions (if any) shall be defined here >
+		}
 
 		pthread_mutex_unlock(&tp->mtx);
 

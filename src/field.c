@@ -54,35 +54,49 @@ void deploy_pheromone(unsigned int id, int x, int y, phero_type type, float valu
 
 
 
-visual_scan find_target_visually(int x, int y, int radius, phero_type type) {
+visual_scan find_target_visually(int x, int y, int radius, phero_type desired_type) {
 
 	visual_scan res;
 	res.success = false;
+	res.oth_obj_found = false;
 
-	switch (type) {
-		case FOOD:
-			for (int i = 0; i < MAX_FOOD_SRC; ++i) {
-				pthread_mutex_lock(&foods[i].mtx);
-				if (foods[i].units > 0 && hypot(foods[i].x - x, foods[i].y - y) <= radius) {
+	// Check if there is any source of food nearby
+	for (int i = 0; i < MAX_FOOD_SRC; ++i) {
+		pthread_mutex_lock(&foods[i].mtx);
+		if (foods[i].units > 0 && hypot(foods[i].x - x, foods[i].y - y) <= radius) {
+			switch(desired_type) {
+				case FOOD:
 					res.success = true;
 					res.target_x = foods[i].x;
 					res.target_y = foods[i].y;
-					pthread_mutex_unlock(&foods[i].mtx);
 					break;
-				} else {
-					pthread_mutex_unlock(&foods[i].mtx);
-				}
+				case HOME:
+					res.oth_obj_found = true;
+					break;
+				default:
+					printf("This should not happen! (unrecognized pheromone type)\n");
 			}
+			pthread_mutex_unlock(&foods[i].mtx);
 			break;
-		case HOME:
-			if (hypot(x - HOME_X, y - HOME_Y) <= radius) {
+		} else {
+			pthread_mutex_unlock(&foods[i].mtx);
+		}
+	}
+
+	// Check if anthill is nearby
+	if (hypot(x - HOME_X, y - HOME_Y) <= radius) {
+		switch(desired_type) {
+			case HOME:
 				res.success = true;
 				res.target_x = HOME_X;
 				res.target_y = HOME_Y;
-			}
-			break;
-		default:
-			printf("This should not happen! (unrecognized pheromone type)\n");
+				break;
+			case FOOD:
+				res.oth_obj_found = true;
+				break;
+			default:
+				printf("This should not happen! (unrecognized pheromone type)\n");
+		}
 	}
 
 	return res;

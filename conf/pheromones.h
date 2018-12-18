@@ -6,7 +6,7 @@
 #define SMELL_UNIT			100.0	// pheromone intensity when initially deployed
 #define SMELL_THRESH		1.0		// minimum intensity of a pheromone not approximable to 0
 #define DEPLOY_BACKOFF		5		// backoff time before another pheromone can be deployed in same cell
-#define DEPLOY_FACTOR		0.97	// regulates pheromone deployment (trail length)
+#define DEPLOY_FACTOR		0.975	// regulates pheromone deployment (trail length)
 #define DECAY_FACTOR		0.98	// regulates pheromone evaporation (trail duration)
 
 #define WCET_DECAY			50

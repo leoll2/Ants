@@ -29,9 +29,10 @@ typedef struct cell {
 } cell;
 
 typedef struct visual_scan {
-	bool 			success;		// actual target detected?
+	bool 			success;		// desired object detected
 	int 			target_x;		// [pixel] target x
 	int 			target_y;		// [pixel] target y
+	bool			oth_obj_found; 	// any other object detected
 } visual_scan;
 
 typedef struct smell_scan {
@@ -46,7 +47,7 @@ extern cell ph[PH_SIZE_H][PH_SIZE_V];
 extern food foods[MAX_FOOD_SRC];
 extern unsigned int n_food_src;
 
-visual_scan find_target_visually(int x, int y, int radius, phero_type type);
+visual_scan find_target_visually(int x, int y, int radius, phero_type desired_type);
 
 smell_scan find_smell_direction(int x, int y, int orientation, int radius, scan_mode mode, phero_type type);
 

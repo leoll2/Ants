@@ -12,16 +12,16 @@ int numero;
 
 void init_ant(ant *const a, int tid) {
 
-	a->alive = 		true;
-	a->tid = 		(unsigned int)tid;
-	a->pos.x = 		HOME_X;
-	a->pos.y = 		HOME_Y;
-	a->pos.angle = 	rand() * TWO_PI;
-	a->interest = 	FOOD;
-	a->behaviour = 	RESTING;
+	a->alive = true;
+	a->tid = (unsigned int)tid;
+	a->pos.x = 	HOME_X;
+	a->pos.y = 	HOME_Y;
+	a->pos.angle = rand() * TWO_PI;
+	a->interest = FOOD;
+	a->behaviour = RESTING;
 	a->excitement = 1.0;
-	a->audacity = 	AUDACITY;
-	a->diverted = 	false;
+	a->audacity = AUDACITY;
+	a->diverted = false;
 	a->expl_desire = 0;
 }
 
@@ -153,6 +153,8 @@ void *ant_routine(void *arg) {
 				if (tracking_step(a, v_scan.target_x, v_scan.target_y))
 					a->behaviour = (a->interest == FOOD) ? EATING : RESTING;
 				break;
+			} else if (v_scan.oth_obj_found) {
+				a->excitement = 1.0;
 			}
 			// Are there pheromones nearby?
 			s_scan = find_smell_direction(a->pos.x, a->pos.y, a->pos.angle,
