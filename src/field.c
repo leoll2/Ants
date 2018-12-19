@@ -8,52 +8,19 @@
 #include "field.h"
 
 
-#define MAX(x, y) (((x) > (y)) ? (x) : (y))		// TODO: TO BE MOVED IN CONF/UTILS
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
 
-int tid;			// pheromone evaporation thread id
-cell ph[PH_SIZE_H][PH_SIZE_V];
-food foods[MAX_FOOD_SRC];
-unsigned int n_food_src;
-
-
-void drop_pheromone(unsigned int id, int x, int y, fragrance type, float value) {
-
-	assert((x < FIELD_WIDTH) && (y < FIELD_HEIGHT));
-	assert((type == HOME) || (type == FOOD));
-	assert((value >= 0) && (value <= SMELL_UNIT));
-
-	if (value < SMELL_THRESH)
-		return;
-
-	int i = x / CELL_SIZE;
-	int j = y / CELL_SIZE;
-
-	pthread_mutex_lock(&ph[i][j].mtx);
-
-	switch(type) {
-		case FOOD:
-			if (ph[i][j].backoff_food == 0) {
-				ph[i][j].food = MAX(ph[i][j].food, value);
-				ph[i][j].backoff_food = DROP_BACKOFF;
-			}
-			break;
-		case HOME:
-			if (ph[i][j].backoff_home == 0) {
-				ph[i][j].home = MAX(ph[i][j].home, value);
-				ph[i][j].backoff_home = DROP_BACKOFF;
-			}
-			break;
-		default:
-			printf("This should not happen! (unrecognized pheromone type)\n");
-	}
-	pthread_mutex_unlock(&ph[i][j].mtx);
-}
+int tid;		// pheromone evaporation thread id
+cell ph[PH_SIZE_H][PH_SIZE_V]; 	// container for pheromones cells
+food foods[MAX_FOOD_SRC];   	// container for food sources
+unsigned int n_food_src;     	// number of food sources
 
 
 
-
+/* Check if the target is close enough to be directly seen, or even if a non-interesting
+*  object is very close from here (in the latter case, drop pheromones again) */
 visual_scan find_target_visually(int x, int y, int radius, fragrance desired_type) {
 
 	visual_scan res;
@@ -105,8 +72,49 @@ visual_scan find_target_visually(int x, int y, int radius, fragrance desired_typ
 }
 
 
-/* x and y are pixel coordinates, radius is cell-sized coordinate
-*/
+/* ======================================
+*  ============= PHEROMONES =============
+*  ====================================== */
+
+
+/* Drop a pheromone on the cell corresponding to the specified coordinates. */
+void drop_pheromone(unsigned int id, int x, int y, fragrance type, float value) {
+
+	assert((x < FIELD_WIDTH) && (y < FIELD_HEIGHT));
+	assert((type == HOME) || (type == FOOD));
+	assert((value >= 0) && (value <= SMELL_UNIT));
+
+	// Make sure the value is above a minimum threshdol
+	if (value < SMELL_THRESH)
+		return;
+
+	int i = x / CELL_SIZE;
+	int j = y / CELL_SIZE;
+
+	pthread_mutex_lock(&ph[i][j].mtx);
+
+	switch(type) {
+		case FOOD:
+			if (ph[i][j].backoff_food == 0) {
+				ph[i][j].food = MAX(ph[i][j].food, value);
+				ph[i][j].backoff_food = DROP_BACKOFF;
+			}
+			break;
+		case HOME:
+			if (ph[i][j].backoff_home == 0) {
+				ph[i][j].home = MAX(ph[i][j].home, value);
+				ph[i][j].backoff_home = DROP_BACKOFF;
+			}
+			break;
+		default:
+			printf("This should not happen! (unrecognized pheromone type)\n");
+	}
+	pthread_mutex_unlock(&ph[i][j].mtx);
+}
+
+
+/* Local smell scan to detect the location (thus direction) of the most intense pheromone.
+*  x and y are pixel coordinates, radius is cell-sized coordinate */
 smell_scan find_smell_direction(int x, int y, int orientation, int radius, 
 								scan_mode mode, fragrance type) 
 {
@@ -176,6 +184,7 @@ smell_scan find_smell_direction(int x, int y, int orientation, int radius,
 }
 
 
+/* Evaporate a fraction of the pheromones in the given cell */
 static inline void phero_exp_evaporation(int i, int j) {
 
 	pthread_mutex_lock(&ph[i][j].mtx);
@@ -186,16 +195,17 @@ static inline void phero_exp_evaporation(int i, int j) {
 		ph[i][j].backoff_food--;
 
     ph[i][j].food *= EVAPOR_FACTOR;
-    if (ph[i][j].food < SMELL_THRESH)
+    if (ph[i][j].food < SMELL_THRESH)	// if below threshold, set to 0
     	ph[i][j].food = 0.0;
     ph[i][j].home *= EVAPOR_FACTOR;
-    if (ph[i][j].home < SMELL_THRESH)
+    if (ph[i][j].home < SMELL_THRESH)	// if below threshold, set to 0
     	ph[i][j].home = 0.0;
 
     pthread_mutex_unlock(&ph[i][j].mtx);
 }
 
 
+/* Evaporation thread routine */
 void *evapor_behaviour(void *arg) {
 
 	for (int i = 0; i < PH_SIZE_H; ++i)
@@ -204,6 +214,7 @@ void *evapor_behaviour(void *arg) {
 }
 
 
+/* Start the pheromones evaporation task */
 unsigned int start_pheromones(void) {
 
 	// make sure CELL_SIZE divides the field dimensions
@@ -229,6 +240,7 @@ unsigned int start_pheromones(void) {
 }
 
 
+/* Gracefully stop the pheromones evaporation task */
 void stop_pheromones(void) {
 
 	stop_thread(tid);
@@ -236,6 +248,22 @@ void stop_pheromones(void) {
 }
 
 
+/* ======================================
+*  ================ FOOD ================
+*  ====================================== */
+
+
+/* Initialize food data structures */
+void init_foods(void) {
+
+	for (int i = 0; i < MAX_FOOD_SRC; ++i) {
+		pthread_mutex_init(&foods[i].mtx, NULL);
+		foods[i].units = 0;
+	}
+}
+
+
+/* Consume a unit of food in the given location */
 int consume_food(int x, int y) {
 
 	if ((x < 0) || (x >= FIELD_WIDTH) || (y < 0) || (y >= FIELD_HEIGHT))
@@ -263,10 +291,11 @@ int consume_food(int x, int y) {
 		pthread_mutex_unlock(&foods[i].mtx);
 		return 0;
 	}
-	return -1;
+	return -1;	// food not found at specified coordinates
 }
 
 
+/* Add food in the given location */
 int drop_food(int x, int y) {
 
 	if ((x < 0) || (x >= FIELD_WIDTH) || (y < 0) || (y >= FIELD_HEIGHT))
@@ -284,15 +313,5 @@ int drop_food(int x, int y) {
 		}
 		pthread_mutex_unlock(&foods[i].mtx);
 	}
-
-	return -1;
-}
-
-
-void init_foods(void) {
-
-	for (int i = 0; i < MAX_FOOD_SRC; ++i) {
-		pthread_mutex_init(&foods[i].mtx, NULL);
-		foods[i].units = 0;
-	}
+	return -1;	// food not found at specified coordinates
 }

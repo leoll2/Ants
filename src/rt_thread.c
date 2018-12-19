@@ -4,11 +4,16 @@
 #include "rt_thread.h"
 
 
-task_par rt_threads[MAX_THREADS];
-unsigned int active_rt_threads = 0;
-pthread_mutex_t rt_threads_mtx = PTHREAD_MUTEX_INITIALIZER;
+task_par rt_threads[MAX_THREADS];		// container for thread descriptors
+unsigned int active_rt_threads = 0;		// number of currently active threads
+pthread_mutex_t rt_threads_mtx = PTHREAD_MUTEX_INITIALIZER;	// mutex to protect rt_threads
 
 
+/* ======================================
+*  ============== UTILITY ===============
+*  ====================================== */
+
+/* Copy time data structure */
 void time_copy(struct timespec *const dst, struct timespec src) {
 	
 	dst->tv_sec  = src.tv_sec;
@@ -16,6 +21,7 @@ void time_copy(struct timespec *const dst, struct timespec src) {
 }
 
 
+/* Add an interval (in milliseconds) to a time data structure */
 void time_add_ms(struct timespec *const t, int ms) {
 
 	t->tv_sec += ms/1000;
@@ -27,6 +33,7 @@ void time_add_ms(struct timespec *const t, int ms) {
 }
 
 
+/* Compare two time data structures */
 int time_cmp(struct timespec t1, struct timespec t2) {
 	
 	if (t1.tv_sec > t2.tv_sec) return 1;
@@ -37,13 +44,20 @@ int time_cmp(struct timespec t1, struct timespec t2) {
 }
 
 
-/* Initialize thread pool data structures*/
+
+/* ======================================
+*  ============= THREADING ==============
+*  ====================================== */
+
+
+/* Initialize thread pool descriptors */
 void init_rt_thread_manager(void) {
 
 	pthread_mutex_lock(&rt_threads_mtx);
 
 	active_rt_threads = 0;
 
+	// All threads are initially marked as idle
 	for (int i = 0; i < MAX_THREADS; ++i) {
 		rt_threads[i].in_use = false;
 	}
@@ -52,10 +66,8 @@ void init_rt_thread_manager(void) {
 }
 
 
-
-/* Allocates a previously unused task_par structure and returns its index.
-*  If none is free, return MAX_THREADS.
-*/
+/* Allocates a previously unused thread descriptor and returns its index.
+*  If none is free, return MAX_THREADS. */
 unsigned int allocate_task_id(void) {
 
 	unsigned int i = 0;
@@ -79,18 +91,20 @@ unsigned int allocate_task_id(void) {
 }
 
 
-/* Deallocates the task_par of a finished (by assumption) thread. */
+/* Frees the descriptor of a finished thread. */
 void deallocate_task_id(unsigned int id) {
 
 	pthread_mutex_lock(&rt_threads_mtx);
+
 	--active_rt_threads;
 	rt_threads[id].in_use = false;
+
 	pthread_mutex_destroy(&rt_threads[id].mtx);
 	pthread_mutex_unlock(&rt_threads_mtx);
 }
 
 
-/* Get the index of a task. */
+/* Get the identifier (index) of a task. */
 static inline int get_task_id(task_par *const tp) {
 
 	return tp - rt_threads;
@@ -124,20 +138,24 @@ int init_sched_attr(pthread_attr_t *const attr, int policy, int prio) {
 }
 
 
+/* Set up the first activation time and deadline of the task */
 void set_activation(task_par *const tp) {
 
 	struct timespec t;
 
 	pthread_mutex_lock(&tp->mtx);
+
 	clock_gettime(CLOCK_MONOTONIC, &t);
 	time_copy(&(tp->at), t);
 	time_copy(&(tp->dl), t);
 	time_add_ms(&(tp->at), tp->period);
 	time_add_ms(&(tp->dl), tp->deadline);
+
 	pthread_mutex_unlock(&tp->mtx);
 }
 
 
+/* Return true if the last deadline has been missed */
 bool missed_deadline(task_par *const tp) {
 
 	struct timespec now;
@@ -151,6 +169,14 @@ bool missed_deadline(task_par *const tp) {
 }
 
 
+/* Return the total number of deadlines missed by this task */
+int how_many_dl_missed(unsigned int id) {
+
+	return rt_threads[id].dl_missed;
+}
+
+
+/* Sleep until next activation of the task */
 void wait_next_activation(task_par *const tp) {
 
 	clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &(tp->at), NULL);
@@ -180,7 +206,7 @@ void *rt_thr_body(void *const arg) {
 
 		// Check for deadline miss
 		if (missed_deadline(tp)) {
-			// < Corrective actions (if any) shall be defined here >
+			// < Corrective actions (optional) shall be added here >
 		}
 
 		pthread_mutex_unlock(&tp->mtx);
@@ -195,22 +221,16 @@ void *rt_thr_body(void *const arg) {
 
 
 /* Starts a new real-time thread. 
-*  Returns a unique index identifying the thread, or -1 in case of error.
-*/
-int start_thread(
-		void *(*func)(void *),
-		void *args,
-		int policy,
-		long wcet,
-		int prd,
-		int dl,
-		int prio)
+*  Returns a unique index identifying the thread, or -1 in case of error. */
+int start_thread(void *(*func)(void *), void *args, int policy, long wcet,
+		int prd, int dl, int prio)
 {
 	pthread_attr_t attr;
 	task_par *tp;
 	unsigned int id;
 	int ret;
 
+	// Allocate an id
 	id = allocate_task_id();
 	if (id == MAX_THREADS)
 		return -1;
@@ -218,6 +238,7 @@ int start_thread(
 	tp = &rt_threads[id];
 	pthread_mutex_lock(&tp->mtx);
 
+	// Setup the thread parameters
 	tp->behaviour = func;
 	tp->data = args;
 	tp->wcet = wcet;
@@ -227,22 +248,24 @@ int start_thread(
 	tp->stopped = false;
 	tp->dl_missed = 0;
 
+	// Initialize scheduling attributes
 	ret = init_sched_attr(&attr, policy, prio);
 	if (ret) {
 		printf("Init of sched attributes failed (error: %d)\n", ret);
 		goto error;
 	}
 
+	// Start the actual thread
 	ret = pthread_create(&tp->tid, &attr, rt_thr_body, (void*)tp);
 	if (ret) {
 		printf("Thread creation failed (error: %s)\n", strerror(ret));
 		goto error;
 	}
 
+	// Cleanup
 	ret = pthread_attr_destroy(&attr);
-	if (ret) {		// no corrective actions are actually necessary
+	if (ret)
 		printf("Destruction of sched attributes failed (error: %d)\n", ret);
-	}
 
 	pthread_mutex_unlock(&tp->mtx);
 	return id;
@@ -254,29 +277,20 @@ error:
 }
 
 
+/* Gracefully stop a running thread */
 int stop_thread(unsigned int id) {
 
 	if (id >= MAX_THREADS)
 		return -1;
 
-	if (!rt_threads[id].in_use) {
+	if (!rt_threads[id].in_use)
 		return -1;
-	}
 
 	pthread_mutex_lock(&rt_threads[id].mtx);
 	rt_threads[id].stopped = true;
 	pthread_mutex_unlock(&rt_threads[id].mtx);
 	pthread_join(rt_threads[id].tid, NULL);
 
-	// mutex on rt_threads[i] not needed anymore, since the thread finished
-
 	deallocate_task_id(id);
-
 	return 0;
-}
-
-
-int how_many_dl_missed(unsigned int id) {
-
-	return rt_threads[id].dl_missed;
 }

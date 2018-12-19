@@ -9,8 +9,6 @@
 #include "rt_thread.h"
 
 
-
-
 int main(int argc, char **argv) {
 
 	srand(time(NULL));

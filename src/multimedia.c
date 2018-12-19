@@ -27,7 +27,8 @@ pthread_mutex_t terminate_mtx = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t action_mtx = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t selected_ant_mtx = PTHREAD_MUTEX_INITIALIZER;
 
-unsigned int graphics_tid, keyboard_tid, mouse_tid;
+unsigned int graphics_tid, keyboard_tid, mouse_tid;     // threads IDs
+
 BITMAP* surface;
 BITMAP* fieldbmp;
 BITMAP *antbmp;
@@ -74,11 +75,13 @@ char* icon_bmp_paths[N_ACTIONS] = {
 
 icon icons[N_ACTIONS];
 
+
 /* ======================================
 *  ============== UTILITY ===============
 *  ====================================== */
 
-/* Converts the format of an angle.:
+
+/* Converts the format of an angle
    From: [0, 2*PI) float counterclockwise origin positive x
    To:   [0, 256)  uint  clockwise        origin positive y */
 unsigned int angle_float_to_256(float angle) {
@@ -87,6 +90,7 @@ unsigned int angle_float_to_256(float angle) {
 }
 
 
+/* Get the selected ant index atomically */
 int get_selected(void) {
 
     int sel_ant;
@@ -97,6 +101,7 @@ int get_selected(void) {
 }
 
 
+/* Set the selected ant index atomically */
 void set_selected(int id) {
 
     pthread_mutex_lock(&selected_ant_mtx);
@@ -105,6 +110,7 @@ void set_selected(int id) {
 }
 
 
+/* Get the current action atomically */
 action get_action(void) {
 
     action a;
@@ -114,6 +120,8 @@ action get_action(void) {
     return a;
 }
 
+
+/* Set the action atomically */
 void set_action(action a) {
 
     pthread_mutex_lock(&action_mtx);
@@ -212,6 +220,8 @@ void draw_toolbar(void) {
 }
 
 
+/* Draw the status information and statistics about the currently selected ant.
+*  x0 and y0 are the coordinate of the upper-left corner of the panel  */
 void draw_selected_ant_stats(int x0, int y0) {
 
     char buf[60];
@@ -271,6 +281,7 @@ void draw_selected_ant_stats(int x0, int y0) {
 }
 
 
+/* Draw the status and statistics panel */
 void draw_stats_panelbox(void) {
 
     int x0 = FIELD_WIDTH;
@@ -302,12 +313,14 @@ void draw_stats_panelbox(void) {
 }
 
 
+/* Compute the visual radius of a pheromone on the basis of its value */
 static inline unsigned int phero_radius(float value) {
 
     return (unsigned int)ceil((CELL_SIZE / 2) * (value / SMELL_UNIT));
 }
 
 
+/* Draw the pheromones contained in cell (i,j) */
 static inline void draw_pheromone(int i, int j) {
 
     pthread_mutex_lock(&ph[i][j].mtx);
@@ -330,6 +343,7 @@ static inline void draw_pheromone(int i, int j) {
 }
 
 
+/* Draw the ant */
 static inline void draw_ant(int i, bool selected) {
 
     ant *a = &ants[i];
@@ -339,10 +353,11 @@ static inline void draw_ant(int i, bool selected) {
         if (antbmp != NULL) {
             rotate_sprite(surface, antbmp, (a->pos.x - antbmp->w/2),
                     (a->pos.y - antbmp->h/2), itofix(angle_float_to_256(a->pos.angle)));
+            // If the ant is the currently selected one, also draw a circle around it
             if (selected)
                 circle(surface, a->pos.x, a->pos.y, 15, COLOR_RED);
         } else
-            circlefill(surface, a->pos.x, a->pos.y, CELL_SIZE / 2, COLOR_RED);  // fallback
+            circlefill(surface, a->pos.x, a->pos.y, CELL_SIZE / 2, COLOR_RED);  // fallback figure
     }
 
     pthread_mutex_unlock(&a->mtx);
@@ -350,17 +365,19 @@ static inline void draw_ant(int i, bool selected) {
 }
 
 
+/* Draw the anthill */
 void draw_anthill(void) {
 
     draw_sprite(surface, anthillbmp, HOME_X - IMG_ANTHILL_SIZE / 2, HOME_Y - IMG_ANTHILL_SIZE / 2);
 }
 
 
-
+/* Draw food sources */
 void draw_food(void) {
 
     for (int i = 0; i < MAX_FOOD_SRC; ++i) {
         if (foods[i].units > 0) {
+            // The dimension is proportional to the remaining food units
             int scaled_size = (int)floor(IMG_FOOD_SIZE * ((double)foods[i].units / FOOD_UNITS));
             stretch_sprite(surface, foodbmp, foods[i].x - scaled_size / 2, foods[i].y - scaled_size / 2, scaled_size, scaled_size);
         }
@@ -368,6 +385,7 @@ void draw_food(void) {
 }
 
 
+/* Graphic task routine */
 void *graphics_behaviour(void *arg) {
 
     clear_field();
@@ -388,6 +406,7 @@ void *graphics_behaviour(void *arg) {
         for (int j = 0; j < PH_SIZE_V; ++j)
             draw_pheromone(i, j);
 
+    // Draw toolbar and stats
     draw_toolbar();
     draw_stats_panelbox();
     
@@ -396,6 +415,7 @@ void *graphics_behaviour(void *arg) {
 }
 
 
+/* Start the graphics thread */
 unsigned int start_graphics(void) {
 
     unsigned int ret;
@@ -414,6 +434,7 @@ unsigned int start_graphics(void) {
 }
 
 
+/* Gracefully stop the graphics thread */
 void stop_graphics(void) {
 
     stop_thread(graphics_tid);
@@ -427,6 +448,7 @@ void stop_graphics(void) {
 *  ====================================== */
 
 
+/* Get ASCII code and scan code of the pressed key */
 void get_keycodes(char *scan, char *ascii) {
 
     int k;
@@ -436,12 +458,14 @@ void get_keycodes(char *scan, char *ascii) {
 }
 
 
+/* Keyboard thread routine */
 void *keyboard_behaviour(void *arg) {
 
     int key;
     char ascii, scan;
     int ret;
 
+    // Execute the actions corresponding to the pressed keys
     while (keypressed()) {
         action a = get_action();
         get_keycodes(&scan, &ascii);
@@ -482,6 +506,7 @@ void *keyboard_behaviour(void *arg) {
 }
 
 
+/* Start the keyboard thread */
 unsigned int start_keyboard(void) {
 
     unsigned int ret;
@@ -499,6 +524,7 @@ unsigned int start_keyboard(void) {
 }
 
 
+/* Gracefully stop the keyboard thread */
 void stop_keyboard(void) {
 
     stop_thread(keyboard_tid);
@@ -512,12 +538,13 @@ void stop_keyboard(void) {
 *  ====================================== */
 
 
+/* Mouse task routine */
 void *mouse_behaviour(void *arg) {
 
     int x, y;
     int mbutton;
 
-    // Check if any button is being clicked, else return
+    // Check if any button is being clicked, otherwise return
     mbutton = mouse_b & 3;
     if (mbutton) {
         x = mouse_x;
@@ -559,10 +586,10 @@ void *mouse_behaviour(void *arg) {
             }
             break;
         case 2:     // Right-click
-            printf("Right click at coords(%d, %d)!\n", x, y);
+            /* <Actions performed with right click (if any) go here> */
             break;
         case 3:     // Both clicks
-            printf("Both clicks at coords(%d, %d)!\n", x, y);
+            /* <Actions performed with both clicks (if any) go here> */
             break;
         default:
             break;
@@ -570,6 +597,7 @@ void *mouse_behaviour(void *arg) {
 }
 
 
+/* Start the mouse thread */
 unsigned int start_mouse(void) {
 
     unsigned int ret;
@@ -588,6 +616,7 @@ unsigned int start_mouse(void) {
 }
 
 
+/* Gracefully stop the mouse thread */
 void stop_mouse(void) {
 
     stop_thread(mouse_tid);
@@ -595,6 +624,7 @@ void stop_mouse(void) {
 }
 
 
+/* Initialize multimedia (graphics, mouse, keyboard) data structures */
 unsigned int init_multimedia() {
 
     if (init_graphics())
@@ -610,6 +640,7 @@ unsigned int init_multimedia() {
 }
 
 
+/* Stop all multimedia threads */
 void stop_multimedia() {
 
     stop_keyboard();
@@ -618,15 +649,10 @@ void stop_multimedia() {
 }
 
 
+/* Wait until the application should close (i.e. user pressed ESC) */
 void wait_for_termination(void) {
 
     pthread_mutex_lock(&terminate_mtx);
     pthread_cond_wait(&terminate, &terminate_mtx);
     pthread_mutex_unlock(&terminate_mtx);
-}
-
-
-void increment_ants_command(int k){
-    if ( (k >> 8)  == KEY_LEFT)
-        spawn_ant();
 }
