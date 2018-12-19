@@ -12,7 +12,7 @@
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
 
-int tid;			// pheromone decay thread id
+int tid;			// pheromone evaporation thread id
 cell ph[PH_SIZE_H][PH_SIZE_V];
 food foods[MAX_FOOD_SRC];
 unsigned int n_food_src;
@@ -176,7 +176,7 @@ smell_scan find_smell_direction(int x, int y, int orientation, int radius,
 }
 
 
-static inline void phero_exp_decay(int i, int j) {
+static inline void phero_exp_evaporation(int i, int j) {
 
 	pthread_mutex_lock(&ph[i][j].mtx);
 
@@ -185,10 +185,10 @@ static inline void phero_exp_decay(int i, int j) {
 	if (ph[i][j].backoff_food)
 		ph[i][j].backoff_food--;
 
-    ph[i][j].food *= DECAY_FACTOR;
+    ph[i][j].food *= EVAPOR_FACTOR;
     if (ph[i][j].food < SMELL_THRESH)
     	ph[i][j].food = 0.0;
-    ph[i][j].home *= DECAY_FACTOR;
+    ph[i][j].home *= EVAPOR_FACTOR;
     if (ph[i][j].home < SMELL_THRESH)
     	ph[i][j].home = 0.0;
 
@@ -196,11 +196,11 @@ static inline void phero_exp_decay(int i, int j) {
 }
 
 
-void *decay_behaviour(void *arg) {
+void *evapor_behaviour(void *arg) {
 
 	for (int i = 0; i < PH_SIZE_H; ++i)
         for (int j = 0; j < PH_SIZE_V; ++j)
-            phero_exp_decay(i, j);
+            phero_exp_evaporation(i, j);
 }
 
 
@@ -218,12 +218,12 @@ unsigned int start_pheromones(void) {
 		}
 	}
 
-	tid = start_thread(decay_behaviour, NULL, SCHED_FIFO, WCET_DECAY, PRD_DECAY, DL_DECAY, PRIO_DECAY);
+	tid = start_thread(evapor_behaviour, NULL, SCHED_FIFO, WCET_EVAPOR, PRD_EVAPOR, DL_EVAPOR, PRIO_EVAPOR);
 	if (tid < 0) {
-		printf("Failed to start pheromone decay thread\n");
+		printf("Failed to start pheromones evaporation thread\n");
 		return 1;
 	} else 
-		printf("Started pheromone decay thread with id #%d\n", tid);
+		printf("Started pheromones evaporation thread with id #%d\n", tid);
 
 	return 0;
 }
@@ -232,7 +232,7 @@ unsigned int start_pheromones(void) {
 void stop_pheromones(void) {
 
 	stop_thread(tid);
-	printf("Pheromones decay thread stopped.\n");
+	printf("Pheromones evaporation thread stopped.\n");
 }
 
 
