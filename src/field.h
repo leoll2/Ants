@@ -23,8 +23,8 @@ typedef struct food {
 typedef struct cell {
 	float 			food;			// food scent intensity
 	float 			home;			// anthill scent intensity
-	unsigned int 	backoff_food;	// cooldown before food pheromone can be deployed
-	unsigned int 	backoff_home;	// cooldown before food pheromone can be deployed 
+	unsigned int 	backoff_food;	// cooldown before food pheromone can be dropped
+	unsigned int 	backoff_home;	// cooldown before food pheromone can be dropped 
 	pthread_mutex_t mtx;
 } cell;
 
@@ -51,7 +51,7 @@ visual_scan find_target_visually(int x, int y, int radius, fragrance desired_typ
 
 smell_scan find_smell_direction(int x, int y, int orientation, int radius, scan_mode mode, fragrance type);
 
-void deploy_pheromone(unsigned int id, int x, int y, fragrance type, float value);
+void drop_pheromone(unsigned int id, int x, int y, fragrance type, float value);
 
 unsigned int start_pheromones(void);
 
@@ -61,6 +61,6 @@ void init_foods(void);
 
 int consume_food(int x, int y);
 
-int deploy_food(int x, int y);
+int drop_food(int x, int y);
 
 #endif

@@ -185,11 +185,11 @@ void *ant_routine(void *arg) {
 			printf("This should not happen! (unrecognized ant behaviour)\n");
 	}
 
-	deploy_pheromone(a->tid, a->pos.x, a->pos.y,
+	drop_pheromone(a->tid, a->pos.x, a->pos.y,
 					 a->interest == FOOD ? HOME : FOOD,
 					 a->excitement * SMELL_UNIT
 	);
-	a->excitement *= DEPLOY_FACTOR;
+	a->excitement *= DROP_FACTOR;
 
 	pthread_mutex_unlock(&a->mtx);
 }

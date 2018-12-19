@@ -532,7 +532,7 @@ void *mouse_behaviour(void *arg) {
         case 1:     // Left-click
             switch(a) {
                 case ADD_FOOD:
-                    ret = deploy_food(x, y);
+                    ret = drop_food(x, y);
                     if (ret == 0) {
                         snprintf(current_message, 80, "%s", "Food placed!");
                         set_action(IDLE);

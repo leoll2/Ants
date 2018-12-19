@@ -18,7 +18,7 @@ food foods[MAX_FOOD_SRC];
 unsigned int n_food_src;
 
 
-void deploy_pheromone(unsigned int id, int x, int y, fragrance type, float value) {
+void drop_pheromone(unsigned int id, int x, int y, fragrance type, float value) {
 
 	assert((x < FIELD_WIDTH) && (y < FIELD_HEIGHT));
 	assert((type == HOME) || (type == FOOD));
@@ -36,13 +36,13 @@ void deploy_pheromone(unsigned int id, int x, int y, fragrance type, float value
 		case FOOD:
 			if (ph[i][j].backoff_food == 0) {
 				ph[i][j].food = MAX(ph[i][j].food, value);
-				ph[i][j].backoff_food = DEPLOY_BACKOFF;
+				ph[i][j].backoff_food = DROP_BACKOFF;
 			}
 			break;
 		case HOME:
 			if (ph[i][j].backoff_home == 0) {
 				ph[i][j].home = MAX(ph[i][j].home, value);
-				ph[i][j].backoff_home = DEPLOY_BACKOFF;
+				ph[i][j].backoff_home = DROP_BACKOFF;
 			}
 			break;
 		default:
@@ -267,7 +267,7 @@ int consume_food(int x, int y) {
 }
 
 
-int deploy_food(int x, int y) {
+int drop_food(int x, int y) {
 
 	if ((x < 0) || (x >= FIELD_WIDTH) || (y < 0) || (y >= FIELD_HEIGHT))
 		return -2;
