@@ -220,7 +220,7 @@ void draw_selected_ant_stats(int x0, int y0) {
     position sel_pos;
     float sel_aud;
     float sel_exc;
-    phero_type sel_int;
+    fragrance sel_int;
     behaviour sel_beh;
 
     hline(surface, FIELD_WIDTH, STATS_ANT_OFF_H, SCREEN_W - 1, COLOR_TOOLBAR_BORDER);

@@ -18,7 +18,7 @@ food foods[MAX_FOOD_SRC];
 unsigned int n_food_src;
 
 
-void deploy_pheromone(unsigned int id, int x, int y, phero_type type, float value) {
+void deploy_pheromone(unsigned int id, int x, int y, fragrance type, float value) {
 
 	assert((x < FIELD_WIDTH) && (y < FIELD_HEIGHT));
 	assert((type == HOME) || (type == FOOD));
@@ -54,7 +54,7 @@ void deploy_pheromone(unsigned int id, int x, int y, phero_type type, float valu
 
 
 
-visual_scan find_target_visually(int x, int y, int radius, phero_type desired_type) {
+visual_scan find_target_visually(int x, int y, int radius, fragrance desired_type) {
 
 	visual_scan res;
 	res.success = false;
@@ -108,7 +108,7 @@ visual_scan find_target_visually(int x, int y, int radius, phero_type desired_ty
 /* x and y are pixel coordinates, radius is cell-sized coordinate
 */
 smell_scan find_smell_direction(int x, int y, int orientation, int radius, 
-								scan_mode mode, phero_type type) 
+								scan_mode mode, fragrance type) 
 {
 	assert((x < FIELD_WIDTH) && (y < FIELD_HEIGHT));
 	assert((type == HOME) || (type == FOOD));

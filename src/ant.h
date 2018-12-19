@@ -26,7 +26,7 @@ typedef struct ant {
 	bool 			alive;		// is ant allocated? is the data meaningful?
 	unsigned int 	tid;		// thread identifier
 	position 		pos;		// ant position
-	phero_type		interest;	// looking for food or home?
+	fragrance		interest;	// looking for food or home?
 	behaviour		behaviour;	// following a trail or exploring?
 	float			excitement;	// intensity of the pheromone to be released
 	float 			audacity;	// propensity for explorative decisions

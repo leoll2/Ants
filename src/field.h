@@ -5,7 +5,7 @@
 #include "conf/pheromones.h"
 #include "rt_thread.h"
 
-typedef enum phero_type {HOME, FOOD} 	phero_type;
+typedef enum fragrance {HOME, FOOD} 	fragrance;
 typedef enum scan_mode  {FULL, FORWARD} scan_mode;
 
 #define PH_SIZE_H 		(FIELD_WIDTH  / CELL_SIZE)
@@ -47,11 +47,11 @@ extern cell ph[PH_SIZE_H][PH_SIZE_V];
 extern food foods[MAX_FOOD_SRC];
 extern unsigned int n_food_src;
 
-visual_scan find_target_visually(int x, int y, int radius, phero_type desired_type);
+visual_scan find_target_visually(int x, int y, int radius, fragrance desired_type);
 
-smell_scan find_smell_direction(int x, int y, int orientation, int radius, scan_mode mode, phero_type type);
+smell_scan find_smell_direction(int x, int y, int orientation, int radius, scan_mode mode, fragrance type);
 
-void deploy_pheromone(unsigned int id, int x, int y, phero_type type, float value);
+void deploy_pheromone(unsigned int id, int x, int y, fragrance type, float value);
 
 unsigned int start_pheromones(void);
 
