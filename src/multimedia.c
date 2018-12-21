@@ -48,7 +48,7 @@ char* action_keybind[N_ACTIONS] = {
 };
 
 char* action_desc[N_ACTIONS] = {
-    "None",
+    "Select",
     "Add food",
     "Add ant",
     "Kill ant",
