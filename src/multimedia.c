@@ -164,7 +164,8 @@ unsigned int init_graphics() {
     anthillbmp = load_bitmap(HOME_PATH, NULL);
 
     init_icons();
-    snprintf(current_message, 80, "%s", "Left-click on an ant to view info about it");
+    snprintf(current_message, 80, "%s", 
+            "Left-click on an ant to view info about it");
 
     clear_to_color(surface, COLOR_GREEN);
     blit(surface, screen, 0, 0, 0, 0, SCREEN_W, SCREEN_H);
@@ -188,30 +189,37 @@ void draw_toolbar(void) {
     action a = get_action();
 
     // Draw background and border
-    rectfill(surface, 0, FIELD_HEIGHT, FIELD_WIDTH, SCREEN_H - 1, COLOR_TOOLBAR_BORDER);
-    rectfill(surface, 2, FIELD_HEIGHT + 2, FIELD_WIDTH - 2, SCREEN_H - 3, COLOR_TOOLBAR);
+    rectfill(surface, 0, FIELD_HEIGHT, FIELD_WIDTH, SCREEN_H - 1, 
+            COLOR_TOOLBAR_BORDER);
+    rectfill(surface, 2, FIELD_HEIGHT + 2, FIELD_WIDTH - 2, SCREEN_H - 3, 
+            COLOR_TOOLBAR);
 
     // Display toolbar elements
     for (int i = 0; i < N_ACTIONS; i++) {
         // Draw icon
         if (a == i) {
             rectfill(surface, icons[i].x - 3, icons[i].y - 3, 
-                    icons[i].x + ICON_SIZE + 3, icons[i].y + ICON_SIZE + 3, COLOR_ICON_BORDER);
+                    icons[i].x + ICON_SIZE + 3, icons[i].y + ICON_SIZE + 3, 
+                    COLOR_ICON_BORDER);
             rectfill(surface, icons[i].x, icons[i].y, 
-                    icons[i].x + ICON_SIZE, icons[i].y + ICON_SIZE, COLOR_TOOLBAR);
+                    icons[i].x + ICON_SIZE, icons[i].y + ICON_SIZE, 
+                    COLOR_TOOLBAR);
         } else {
             rect(surface, icons[i].x - 1, icons[i].y - 1, 
-                    icons[i].x + ICON_SIZE + 1, icons[i].y + ICON_SIZE + 1, COLOR_ICON_BORDER);
+                    icons[i].x + ICON_SIZE + 1, icons[i].y + ICON_SIZE + 1, 
+                    COLOR_ICON_BORDER);
         }
         draw_sprite(surface, icons[i].bmp, icons[i].x, icons[i].y);
 
         // Draw keybind
         textout_centre_ex(surface, font, action_keybind[i], 
-            icons[i].x + ICON_SIZE / 2, icons[i].y - 12, COLOR_TEXT, COLOR_TOOLBAR);
+                icons[i].x + ICON_SIZE / 2, icons[i].y - 12, COLOR_TEXT, 
+                COLOR_TOOLBAR);
 
         // Draw description
         textout_centre_ex(surface, font, action_desc[i], 
-            icons[i].x + ICON_SIZE / 2, icons[i].y + ICON_SIZE + 8, COLOR_TEXT, COLOR_TOOLBAR);
+            icons[i].x + ICON_SIZE / 2, icons[i].y + ICON_SIZE + 8, COLOR_TEXT, 
+            COLOR_TOOLBAR);
     }
 
     // Print the current message
@@ -233,16 +241,19 @@ void draw_selected_ant_stats(int x0, int y0) {
     fragrance sel_int;
     behaviour sel_beh;
 
-    hline(surface, FIELD_WIDTH, STATS_ANT_OFF_H, SCREEN_W - 1, COLOR_TOOLBAR_BORDER);
+    hline(surface, FIELD_WIDTH, STATS_ANT_OFF_H, SCREEN_W - 1, 
+            COLOR_TOOLBAR_BORDER);
     textout_centre_ex(surface, font, "ANT", 
-            x0 + (SCREEN_W - FIELD_WIDTH) / 2, STATS_ANT_OFF_H + 10, COLOR_TEXT, COLOR_STATS_PANEL);
+            x0 + (SCREEN_W - FIELD_WIDTH) / 2, STATS_ANT_OFF_H + 10, COLOR_TEXT,
+            COLOR_STATS_PANEL);
 
     sel_ant = get_selected();
     if (sel_ant >= 0)
         sprintf(buf, "%-16s %d", "Selected: ", sel_ant);
     else
         sprintf(buf, "%-16s %s", "Selected: ", "none");
-    textout_ex(surface, font, buf, x0 + 10, STATS_ANT_OFF_H + 40, COLOR_TEXT, COLOR_STATS_PANEL);
+    textout_ex(surface, font, buf, x0 + 10, STATS_ANT_OFF_H + 40, COLOR_TEXT, 
+            COLOR_STATS_PANEL);
 
     if (sel_ant >= 0 && sel_ant < POP_SIZE_MAX) {
         pthread_mutex_lock(&ants[sel_ant].mtx);
@@ -264,20 +275,29 @@ void draw_selected_ant_stats(int x0, int y0) {
         return;
 
     sprintf(buf, "%-16s (%d %d)", "Pos (x,y):", sel_pos.x, sel_pos.y);
-    textout_ex(surface, font, buf, x0 + 10, STATS_ANT_OFF_H + 60, COLOR_TEXT, COLOR_STATS_PANEL);
+    textout_ex(surface, font, buf, x0 + 10, STATS_ANT_OFF_H + 60, COLOR_TEXT, 
+            COLOR_STATS_PANEL);
     sprintf(buf, "%-16s %f", "Angle (deg):", 360 / TWO_PI * sel_pos.angle);
-    textout_ex(surface, font, buf, x0 + 10, STATS_ANT_OFF_H + 80, COLOR_TEXT, COLOR_STATS_PANEL);
-    sprintf(buf, "%-16s %s", "Activity:", ((sel_beh == EXPLORING) || (sel_beh == EXPLOITING)) ? "Searching" : 
+    textout_ex(surface, font, buf, x0 + 10, STATS_ANT_OFF_H + 80, COLOR_TEXT,
+            COLOR_STATS_PANEL);
+    sprintf(buf, "%-16s %s", "Activity:", 
+            ((sel_beh == EXPLORING) || (sel_beh == EXPLOITING)) ? "Searching" : 
             (sel_beh == EATING ? "Eating" : "Resting"));
-    textout_ex(surface, font, buf, x0 + 10, STATS_ANT_OFF_H + 100, COLOR_TEXT, COLOR_STATS_PANEL);
-    sprintf(buf, "%-16s %s", "Looking for:", (sel_int == FOOD) ? "Food" : "Home");
-    textout_ex(surface, font, buf, x0 + 10, STATS_ANT_OFF_H + 120, COLOR_TEXT, COLOR_STATS_PANEL);
+    textout_ex(surface, font, buf, x0 + 10, STATS_ANT_OFF_H + 100, COLOR_TEXT,
+            COLOR_STATS_PANEL);
+    sprintf(buf, "%-16s %s", "Looking for:",
+            (sel_int == FOOD) ? "Food" : "Home");
+    textout_ex(surface, font, buf, x0 + 10, STATS_ANT_OFF_H + 120, COLOR_TEXT,
+            COLOR_STATS_PANEL);
     sprintf(buf, "%-16s %f", "Audacity(%):", sel_aud * 100);
-    textout_ex(surface, font, buf, x0 + 10, STATS_ANT_OFF_H + 140, COLOR_TEXT, COLOR_STATS_PANEL);
+    textout_ex(surface, font, buf, x0 + 10, STATS_ANT_OFF_H + 140, COLOR_TEXT,
+            COLOR_STATS_PANEL);
     sprintf(buf, "%-16s %f", "Excitement(%):", sel_exc * 100);
-    textout_ex(surface, font, buf, x0 + 10, STATS_ANT_OFF_H + 160, COLOR_TEXT, COLOR_STATS_PANEL);
+    textout_ex(surface, font, buf, x0 + 10, STATS_ANT_OFF_H + 160, COLOR_TEXT,
+            COLOR_STATS_PANEL);
     sprintf(buf, "%-16s %d", "Deadline misses:", how_many_dl_missed(sel_tid));
-    textout_ex(surface, font, buf, x0 + 10, STATS_ANT_OFF_H + 180, COLOR_TEXT, COLOR_STATS_PANEL);
+    textout_ex(surface, font, buf, x0 + 10, STATS_ANT_OFF_H + 180, COLOR_TEXT,
+            COLOR_STATS_PANEL);
 }
 
 
@@ -289,25 +309,33 @@ void draw_stats_panelbox(void) {
     char buf[60];
 
     // Draw background and border
-    rectfill(surface, FIELD_WIDTH, 0, SCREEN_W - 1, SCREEN_H - 1, COLOR_STATS_BORDER);
-    rectfill(surface, FIELD_WIDTH + 2, 2, SCREEN_W - 3, SCREEN_H - 3, COLOR_STATS_PANEL);
+    rectfill(surface, FIELD_WIDTH, 0, SCREEN_W - 1, SCREEN_H - 1, 
+            COLOR_STATS_BORDER);
+    rectfill(surface, FIELD_WIDTH + 2, 2, SCREEN_W - 3, SCREEN_H - 3, 
+            COLOR_STATS_PANEL);
 
-    textout_centre_ex(surface, font, "STATUS", 
-            x0 + (SCREEN_W - FIELD_WIDTH) / 2, y0 + 10, COLOR_TEXT, COLOR_STATS_PANEL);
+    textout_centre_ex(surface, font, "STATUS", x0 + (SCREEN_W - FIELD_WIDTH)/2,
+            y0 + 10, COLOR_TEXT, COLOR_STATS_PANEL);
 
     // Print stats
     sprintf(buf, "%-16s %d", "Ants:", n_ants);
-    textout_ex(surface, font, buf, x0 + 10, y0 + 40, COLOR_TEXT, COLOR_STATS_PANEL);
+    textout_ex(surface, font, buf, x0 + 10, y0 + 40, COLOR_TEXT,
+            COLOR_STATS_PANEL);
     sprintf(buf, "%-16s %d", "Food sources:", n_food_src);
-    textout_ex(surface, font, buf, x0 + 10, y0 + 60, COLOR_TEXT, COLOR_STATS_PANEL);
+    textout_ex(surface, font, buf, x0 + 10, y0 + 60, COLOR_TEXT,
+            COLOR_STATS_PANEL);
     sprintf(buf, "%-16s", "Deadline misses");
-    textout_ex(surface, font, buf, x0 + 10, y0 + 80, COLOR_TEXT, COLOR_STATS_PANEL);
+    textout_ex(surface, font, buf, x0 + 10, y0 + 80, COLOR_TEXT,
+            COLOR_STATS_PANEL);
     sprintf(buf, "%-16s %d", " - Graphics:", how_many_dl_missed(graphics_tid));
-    textout_ex(surface, font, buf, x0 + 10, y0 + 100, COLOR_TEXT, COLOR_STATS_PANEL);
+    textout_ex(surface, font, buf, x0 + 10, y0 + 100, COLOR_TEXT,
+            COLOR_STATS_PANEL);
     sprintf(buf, "%-16s %d", " - Mouse:", how_many_dl_missed(mouse_tid));
-    textout_ex(surface, font, buf, x0 + 10, y0 + 120, COLOR_TEXT, COLOR_STATS_PANEL);
+    textout_ex(surface, font, buf, x0 + 10, y0 + 120, COLOR_TEXT,
+            COLOR_STATS_PANEL);
     sprintf(buf, "%-16s %d", " - Keyboard:", how_many_dl_missed(keyboard_tid));
-    textout_ex(surface, font, buf, x0 + 10, y0 + 140, COLOR_TEXT, COLOR_STATS_PANEL);
+    textout_ex(surface, font, buf, x0 + 10, y0 + 140, COLOR_TEXT,
+            COLOR_STATS_PANEL);
 
     draw_selected_ant_stats(x0, y0);
 }
@@ -352,12 +380,13 @@ static inline void draw_ant(int i, bool selected) {
     if (a->alive) {
         if (antbmp != NULL) {
             rotate_sprite(surface, antbmp, (a->pos.x - antbmp->w/2),
-                    (a->pos.y - antbmp->h/2), itofix(angle_float_to_256(a->pos.angle)));
-            // If the ant is the currently selected one, also draw a circle around it
+                    (a->pos.y - antbmp->h/2), 
+                    itofix(angle_float_to_256(a->pos.angle)));
+            // If the ant is currently selected, also draw a circle around it
             if (selected)
                 circle(surface, a->pos.x, a->pos.y, 15, COLOR_RED);
-        } else
-            circlefill(surface, a->pos.x, a->pos.y, CELL_SIZE / 2, COLOR_RED);  // fallback figure
+        } else  // draw fallback figure
+            circlefill(surface, a->pos.x, a->pos.y, CELL_SIZE / 2, COLOR_RED);
     }
 
     pthread_mutex_unlock(&a->mtx);
@@ -368,7 +397,8 @@ static inline void draw_ant(int i, bool selected) {
 /* Draw the anthill */
 void draw_anthill(void) {
 
-    draw_sprite(surface, anthillbmp, HOME_X - IMG_ANTHILL_SIZE / 2, HOME_Y - IMG_ANTHILL_SIZE / 2);
+    draw_sprite(surface, anthillbmp, HOME_X - IMG_ANTHILL_SIZE / 2, 
+            HOME_Y - IMG_ANTHILL_SIZE / 2);
 }
 
 
@@ -378,8 +408,10 @@ void draw_food(void) {
     for (int i = 0; i < MAX_FOOD_SRC; ++i) {
         if (foods[i].units > 0) {
             // The dimension is proportional to the remaining food units
-            int scaled_size = (int)floor(IMG_FOOD_SIZE * ((double)foods[i].units / FOOD_UNITS));
-            stretch_sprite(surface, foodbmp, foods[i].x - scaled_size / 2, foods[i].y - scaled_size / 2, scaled_size, scaled_size);
+            int scaled_size = (int)floor(IMG_FOOD_SIZE * 
+                    ((double)foods[i].units / FOOD_UNITS));
+            stretch_sprite(surface, foodbmp, foods[i].x - scaled_size / 2, 
+                    foods[i].y - scaled_size / 2, scaled_size, scaled_size);
         }
     }
 }
@@ -482,22 +514,26 @@ void *keyboard_behaviour(void *arg) {
                 break;
             case KEY_Q:
                 set_action(IDLE);
-                snprintf(current_message, 80, "%s", "Left-click on an ant to view info about it");
+                snprintf(current_message, 80, "%s", 
+                        "Left-click on an ant to view info about it");
                 break;
             case KEY_W:
                 set_action(ADD_FOOD);
-                snprintf(current_message, 80, "%s", "Left-click on the field to add food");
+                snprintf(current_message, 80, "%s", 
+                        "Left-click on the field to add food");
                 break;
             case KEY_E:
                 set_action(ADD_ANT);
                 if (spawn_ant() == 0)
                     snprintf(current_message, 80, "%s", "Ant spawned!");
                 else
-                    snprintf(current_message, 80, "%s", "Failed to spawn a new ant (too many)");
+                    snprintf(current_message, 80, "%s", 
+                            "Failed to spawn a new ant (too many)");
                 break;
             case KEY_R:
                 set_action(KILL_ANT);
-                snprintf(current_message, 80, "%s", "Left-click on the ant to kill");
+                snprintf(current_message, 80, "%s", 
+                        "Left-click on the ant to kill");
                 break;
             default:
                 printf("Press ESC to quit!\n");
@@ -564,7 +600,8 @@ void *mouse_behaviour(void *arg) {
                         snprintf(current_message, 80, "%s", "Food placed!");
                         set_action(IDLE);
                     } else if (ret == -1) {
-                        snprintf(current_message, 80, "%s", "There is already enough food");
+                        snprintf(current_message, 80, "%s", 
+                                "There is already enough food");
                     }
                     break;
                 case KILL_ANT:

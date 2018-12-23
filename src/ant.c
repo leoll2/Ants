@@ -33,7 +33,7 @@ static inline void reverse_direction(ant *const a) {
 }
 
 
-/* Change the direction to a perpendicular one (either left or right, chosen randomly) */
+/* Change the direction to a perpend. one (either left or right, randomly) */
 static inline void divert_direction(ant *const a) {
 
 	a->diverted = true;
@@ -77,7 +77,8 @@ void advancement_step(ant *const a) {
 	}
 
 	// Slightly change the orientation (randomly)
-	a->pos.angle = fmod(a->pos.angle + (EXPL_CONE * (double)rand() / RAND_MAX - EXPL_CONE / 2), TWO_PI);
+	a->pos.angle = fmod(a->pos.angle +((EXPL_CONE * (double)rand() / RAND_MAX) -
+	        EXPL_CONE / 2), TWO_PI);
 	if (a->pos.angle < 0)
 		a->pos.angle += TWO_PI;
 }
@@ -92,7 +93,7 @@ bool tracking_step(ant *const a, int target_x, int target_y) {
 		return true;
 
 	// Align with the target
-	a->pos.angle = fmod(atan2(a->pos.y - target_y, target_x - a->pos.x), TWO_PI);
+	a->pos.angle = fmod(atan2(a->pos.y - target_y, target_x - a->pos.x),TWO_PI);
 	if (a->pos.angle < 0)
 		a->pos.angle += TWO_PI;
 
@@ -155,7 +156,8 @@ void *ant_routine(void *arg) {
 			break;
 		case EXPLORING:
 			// Is the target close enough to be seen?
-			v_scan = find_target_visually(a->pos.x, a->pos.y, VISION_RADIUS, a->interest);
+			v_scan = find_target_visually(a->pos.x, a->pos.y, VISION_RADIUS, 
+			        a->interest);
 			if (v_scan.success) {
 				if (tracking_step(a, v_scan.target_x, v_scan.target_y))
 					a->behaviour = (a->interest == FOOD) ? EATING : RESTING;
@@ -172,7 +174,8 @@ void *ant_routine(void *arg) {
 			break;
 		case EXPLOITING:
 			// Is the target close enough to be seen?
-			v_scan = find_target_visually(a->pos.x, a->pos.y, VISION_RADIUS, a->interest);
+			v_scan = find_target_visually(a->pos.x, a->pos.y, VISION_RADIUS, 
+			        a->interest);
 			if (v_scan.success) {
 				if (tracking_step(a, v_scan.target_x, v_scan.target_y))
 					a->behaviour = (a->interest == FOOD) ? EATING : RESTING;
@@ -204,7 +207,8 @@ void *ant_routine(void *arg) {
 			printf("This should not happen! (unrecognized ant behaviour)\n");
 	}
 
-	drop_pheromone(a->tid, a->pos.x, a->pos.y, a->interest == FOOD ? HOME : FOOD, a->excitement * SMELL_UNIT);
+	drop_pheromone(a->tid, a->pos.x, a->pos.y, a->interest == FOOD ? HOME : FOOD,
+	        a->excitement * SMELL_UNIT);
 	a->excitement *= DROP_FACTOR;
 
 	pthread_mutex_unlock(&a->mtx);
@@ -259,9 +263,10 @@ int spawn_ant(void) {
 	if (a_id == POP_SIZE_MAX)
 		return -1;
 
-	pthread_mutex_lock(&ants[a_id].mtx);	// prevents the ant from running before initialization
+	pthread_mutex_lock(&ants[a_id].mtx);
 
-	t_id = start_thread(ant_routine, &ants[a_id], SCHED_FIFO, PRD_ANTS, DL_ANTS, PRIO_ANTS);
+	t_id = start_thread(ant_routine, &ants[a_id], SCHED_FIFO, PRD_ANTS, DL_ANTS,
+	        PRIO_ANTS);
 	if (t_id < 0) {
 		pthread_mutex_unlock(&ants[a_id].mtx);
 		deallocate_ant_id(a_id);
@@ -316,7 +321,7 @@ void kill_ants(void) {
 }
 
 
-/* Return the id of an ant given a position, within a certain degree of approximation.
+/* Return the id of an ant given a position, within a certain degree of approx.
 *  If multiple ants are near that position, returns the one with lowest id. */
 int get_ant_id_by_pos(int x, int y) {
 

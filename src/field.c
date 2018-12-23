@@ -19,9 +19,10 @@ unsigned int n_food_src;     	// number of food sources
 
 
 
-/* Check if the target is close enough to be directly seen, or even if a non-interesting
-*  object is very close from here (in the latter case, drop pheromones again) */
-visual_scan find_target_visually(int x, int y, int radius, fragrance desired_type) {
+/* Check if the target is close enough to be directly seen, or even if 
+*  a non-interesting object is very close from here (in the latter case,
+*  drop pheromones again) */
+visual_scan find_target_visually(int x, int y, int radius, fragrance desired) {
 
 	visual_scan res;
 	res.success = false;
@@ -30,19 +31,20 @@ visual_scan find_target_visually(int x, int y, int radius, fragrance desired_typ
 	// Check if there is any source of food nearby
 	for (int i = 0; i < MAX_FOOD_SRC; ++i) {
 		pthread_mutex_lock(&foods[i].mtx);
-		if (foods[i].units > 0 && hypot(foods[i].x - x, foods[i].y - y) <= radius) {
-			switch(desired_type) {
+		if (foods[i].units > 0 && hypot(foods[i].x-x, foods[i].y-y) <= radius) {
+			switch(desired) {
 				case FOOD:
 					res.success = true;
 					res.target_x = foods[i].x;
 					res.target_y = foods[i].y;
 					break;
 				case HOME:
-					// slightly less than radius because of discretization, to prevent local optima outside detection circle
-					res.oth_obj_found = (hypot(foods[i].x - x, foods[i].y - y) <= (radius - CELL_SIZE)); 
+					// less than radius, to avoid local optima out detect circle
+					res.oth_obj_found = (hypot(foods[i].x - x, foods[i].y - y)<=
+					         (radius - CELL_SIZE)); 
 					break;
 				default:
-					printf("This should not happen! (unrecognized pheromone type)\n");
+					printf("Bug! (unrecognized pheromone type)\n");
 			}
 			pthread_mutex_unlock(&foods[i].mtx);
 			break;
@@ -53,7 +55,7 @@ visual_scan find_target_visually(int x, int y, int radius, fragrance desired_typ
 
 	// Check if anthill is nearby
 	if (hypot(x - HOME_X, y - HOME_Y) <= radius) {
-		switch(desired_type) {
+		switch(desired) {
 			case HOME:
 				res.success = true;
 				res.target_x = HOME_X;
@@ -61,10 +63,11 @@ visual_scan find_target_visually(int x, int y, int radius, fragrance desired_typ
 				break;
 			case FOOD:
 				// slightly less than radius (see above)
-				res.oth_obj_found = (hypot(x - HOME_X, y - HOME_Y) <= (radius - CELL_SIZE));
+				res.oth_obj_found = 
+				        (hypot(x - HOME_X, y - HOME_Y) <= (radius - CELL_SIZE));
 				break;
 			default:
-				printf("This should not happen! (unrecognized pheromone type)\n");
+				printf("Bug! (unrecognized pheromone type)\n");
 		}
 	}
 
@@ -78,8 +81,8 @@ visual_scan find_target_visually(int x, int y, int radius, fragrance desired_typ
 
 
 /* Drop a pheromone on the cell corresponding to the specified coordinates. */
-void drop_pheromone(unsigned int id, int x, int y, fragrance type, float value) {
-
+void drop_pheromone(unsigned int id, int x, int y, fragrance type, float value) 
+{
 	assert((x < FIELD_WIDTH) && (y < FIELD_HEIGHT));
 	assert((type == HOME) || (type == FOOD));
 	assert((value >= 0) && (value <= SMELL_UNIT));
@@ -113,8 +116,8 @@ void drop_pheromone(unsigned int id, int x, int y, fragrance type, float value) 
 }
 
 
-/* Local smell scan to detect the location (thus direction) of the most intense pheromone.
-*  x and y are pixel coordinates, radius is cell-sized coordinate */
+/* Local smell scan to detect the location (thus direction) of the most intense 
+*  pheromone. x and y are pixel coordinates, radius is cell-sized coordinate */
 smell_scan find_smell_direction(int x, int y, int orientation, int radius, 
 								scan_mode mode, fragrance type) 
 {
@@ -122,9 +125,9 @@ smell_scan find_smell_direction(int x, int y, int orientation, int radius,
 	assert((type == HOME) || (type == FOOD));
 	assert((mode == FULL) || (mode == FORWARD));
 
-	smell_scan res;					// result variable
+	smell_scan res;		// result variable
 
-	int cell_i = x / CELL_SIZE;		// cell corresponding to the current position
+	int cell_i = x / CELL_SIZE;		// cell corresponding to current position
 	int cell_j = y / CELL_SIZE;		
 
 	// range of cells to be scanned
@@ -147,36 +150,43 @@ smell_scan find_smell_direction(int x, int y, int orientation, int radius,
 	// Scan nearby cells to find the one with the highest pheromone intensity
 	for (int i = i_min; i <= i_max; i++) {
 		for (int j = j_min; j <= j_max; j++) {
-			// Skip check if the cell is out of detection radius
-			if (hypot(cell_i - i, cell_j - j) > (double)radius)
-				continue;
-			// Skip check if scan mode is FORWARD and cell is out of the 180° detection arc
-			if (mode == FORWARD) {
-				double cell_angle = atan2(cell_j - j, i - cell_i);
-				if (cos(cell_angle) * cos(orientation) + sin(cell_angle) * sin(orientation) < 0)
-					continue;
-			}
-			// Get the pheromone intensity of the cell
-			pthread_mutex_lock(&ph[i][j].mtx);
-			float ph_value;
-			switch (type) {
-				case FOOD:
-					ph_value = ph[i][j].food;
-					break;
-				case HOME:
-					ph_value = ph[i][j].home;
-					break;
-				default:
-					printf("This should not happen! (unrecognized pheromone type)\n");
-			}
-			pthread_mutex_unlock(&ph[i][j].mtx);
-			// Update the result variable if that intensity is the highest so far
-			if ((ph_value > 0) && (ph_value > res.opt_val)) {
-				res.success = true;
-				res.local_optimum = false;
-				res.opt_x = i * CELL_SIZE + (CELL_SIZE / 2);
-				res.opt_y = j * CELL_SIZE + (CELL_SIZE / 2);
-				res.opt_val = ph_value;
+		
+		    bool to_scan = true;
+		    // Skip check if the cell is out of detection radius
+		    if (hypot(cell_i - i, cell_j - j) <= (double)radius)
+		        to_scan = false;
+		    // Skip check if scan mode is FORWARD and cell is out of 180° arc
+		    if (mode == FORWARD) {
+			    double cell_angle = atan2(cell_j - j, i - cell_i);
+			    if (cos(cell_angle) * cos(orientation) + 
+			        sin(cell_angle) * sin(orientation) < 0
+			    )
+				    to_scan = false;
+		    }
+			
+			if (to_scan) {
+			    // Get the pheromone intensity of the cell
+			    pthread_mutex_lock(&ph[i][j].mtx);
+			    float ph_value;
+			    switch (type) {
+				    case FOOD:
+					    ph_value = ph[i][j].food;
+					    break;
+				    case HOME:
+					    ph_value = ph[i][j].home;
+					    break;
+				    default:
+					    printf("Bug! (unrecognized pheromone type)\n");
+			    }
+			    pthread_mutex_unlock(&ph[i][j].mtx);
+			    // Update result if that intensity is the highest so far
+			    if ((ph_value > 0) && (ph_value > res.opt_val)) {
+				    res.success = true;
+				    res.local_optimum = false;
+				    res.opt_x = i * CELL_SIZE + (CELL_SIZE / 2);
+				    res.opt_y = j * CELL_SIZE + (CELL_SIZE / 2);
+				    res.opt_val = ph_value;
+			    }
 			}
 		}
 	}
@@ -229,7 +239,8 @@ unsigned int start_pheromones(void) {
 		}
 	}
 
-	tid = start_thread(evapor_behaviour, NULL, SCHED_FIFO, PRD_EVAPOR, DL_EVAPOR, PRIO_EVAPOR);
+	tid = start_thread(evapor_behaviour, NULL, SCHED_FIFO, 
+	        PRD_EVAPOR, DL_EVAPOR, PRIO_EVAPOR);
 	if (tid < 0) {
 		printf("Failed to start pheromones evaporation thread\n");
 		return 1;
@@ -274,22 +285,18 @@ int consume_food(int x, int y) {
 		pthread_mutex_lock(&foods[i].mtx);
 
 		// Check if it actually exists
-		if (foods[i].units == 0) {
-			pthread_mutex_unlock(&foods[i].mtx);
-			continue;
-		}
-
-		// Check if the coordinates match
-		if ((foods[i].x != x) || foods[i].y != y) {
-			pthread_mutex_unlock(&foods[i].mtx);
-			continue;
-		}
-
-		// Consume one unit of food
-		if (--foods[i].units == 0)
-			--n_food_src;
+		if (foods[i].units != 0) {
+		    // Check if the coordinates match
+		    if ((foods[i].x == x) && foods[i].y == y) {
+		        // Consume one unit of food
+		        if (--foods[i].units == 0)
+			        --n_food_src;
+			        
+		        pthread_mutex_unlock(&foods[i].mtx);
+            	return 0;
+            }
+        }
 		pthread_mutex_unlock(&foods[i].mtx);
-		return 0;
 	}
 	return -1;	// food not found at specified coordinates
 }

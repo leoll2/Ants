@@ -14,7 +14,7 @@ int main(int argc, char **argv) {
 	srand(time(NULL));
     printf("Loading...\n");
 
-    /* Initialize data structures to support the creation of real-time threads */
+    /* Initialize data structures to support the creation of real-time threads*/
     init_rt_thread_manager();
     printf("Thread manager successfully initialized.\n");
 

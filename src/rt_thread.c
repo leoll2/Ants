@@ -6,7 +6,7 @@
 
 task_par rt_threads[MAX_THREADS];		// container for thread descriptors
 unsigned int active_rt_threads = 0;		// number of currently active threads
-pthread_mutex_t rt_threads_mtx = PTHREAD_MUTEX_INITIALIZER;	// mutex to protect rt_threads
+pthread_mutex_t rt_threads_mtx = PTHREAD_MUTEX_INITIALIZER;	// mutex rt_threads
 
 
 /* ======================================
@@ -222,7 +222,8 @@ void *rt_thr_body(void *const arg) {
 
 /* Starts a new real-time thread. 
 *  Returns a unique index identifying the thread, or -1 in case of error. */
-int start_thread(void *(*func)(void *), void *args, int policy, int prd, int dl, int prio)
+int start_thread(void *(*func)(void *), void *args, int policy, 
+                 int prd, int dl, int prio)
 {
 	pthread_attr_t attr;
 	task_par *tp;
@@ -250,14 +251,18 @@ int start_thread(void *(*func)(void *), void *args, int policy, int prd, int dl,
 	ret = init_sched_attr(&attr, policy, prio);
 	if (ret) {
 		printf("Init of sched attributes failed (error: %d)\n", ret);
-		goto error;
+		pthread_mutex_unlock(&tp->mtx);
+		deallocate_task_id(id);
+		return -1;
 	}
 
 	// Start the actual thread
 	ret = pthread_create(&tp->tid, &attr, rt_thr_body, (void*)tp);
 	if (ret) {
 		printf("Thread creation failed (error: %s)\n", strerror(ret));
-		goto error;
+		pthread_mutex_unlock(&tp->mtx);
+		deallocate_task_id(id);
+		return -1;
 	}
 
 	// Cleanup
@@ -267,11 +272,6 @@ int start_thread(void *(*func)(void *), void *args, int policy, int prd, int dl,
 
 	pthread_mutex_unlock(&tp->mtx);
 	return id;
-
-error:
-	pthread_mutex_unlock(&tp->mtx);
-	deallocate_task_id(id);
-	return -1;
 }
 
 
