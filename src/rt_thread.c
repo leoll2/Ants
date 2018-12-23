@@ -222,8 +222,7 @@ void *rt_thr_body(void *const arg) {
 
 /* Starts a new real-time thread. 
 *  Returns a unique index identifying the thread, or -1 in case of error. */
-int start_thread(void *(*func)(void *), void *args, int policy, long wcet,
-		int prd, int dl, int prio)
+int start_thread(void *(*func)(void *), void *args, int policy, int prd, int dl, int prio)
 {
 	pthread_attr_t attr;
 	task_par *tp;
@@ -241,7 +240,6 @@ int start_thread(void *(*func)(void *), void *args, int policy, long wcet,
 	// Setup the thread parameters
 	tp->behaviour = func;
 	tp->data = args;
-	tp->wcet = wcet;
 	tp->period = prd;
 	tp->deadline = dl;
 	tp->priority = prio;

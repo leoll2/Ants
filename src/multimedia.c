@@ -421,7 +421,7 @@ unsigned int start_graphics(void) {
     unsigned int ret;
 
     ret = start_thread(graphics_behaviour, NULL, SCHED_FIFO,
-            WCET_GRAPHICS, PRD_GRAPHICS, DL_GRAPHICS, PRIO_GRAPHICS);
+            PRD_GRAPHICS, DL_GRAPHICS, PRIO_GRAPHICS);
     if (ret < 0) {
         printf("Failed to initialize the graphics thread!\n");
         return 1;
@@ -512,7 +512,7 @@ unsigned int start_keyboard(void) {
     unsigned int ret;
 
     ret = start_thread(keyboard_behaviour, NULL, SCHED_FIFO,
-            WCET_KEYBOARD, PRD_KEYBOARD, DL_KEYBOARD, PRIO_KEYBOARD);
+            PRD_KEYBOARD, DL_KEYBOARD, PRIO_KEYBOARD);
     if (ret < 0) {
         printf("Failed to initialize the keyboard thread!\n");
         return 1;
@@ -603,7 +603,7 @@ unsigned int start_mouse(void) {
     unsigned int ret;
 
     ret = start_thread(mouse_behaviour, NULL, SCHED_FIFO,
-            WCET_MOUSE, PRD_MOUSE, DL_MOUSE, PRIO_MOUSE);
+            PRD_MOUSE, DL_MOUSE, PRIO_MOUSE);
     if (ret < 0) {
         printf("Failed to initialize the mouse thread!\n");
         return 1;

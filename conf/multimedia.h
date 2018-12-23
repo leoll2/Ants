@@ -33,19 +33,17 @@
 
 
 /* ======================== 
-*  ======== TASKS =========
+*  ====== GUI TASKS =======
 *  ======================== */
-#define WCET_GRAPHICS		50	// Task WCET
+
 #define PRD_GRAPHICS		50	// Task period
 #define DL_GRAPHICS 		50	// Task deadline
 #define PRIO_GRAPHICS 		30	// Task priority
 
-#define WCET_KEYBOARD 		10	// Task WCET
 #define PRD_KEYBOARD 		200	// Task period
 #define DL_KEYBOARD   		200	// Task deadline
 #define PRIO_KEYBOARD 		10	// Task priority
 
-#define WCET_MOUSE		10	// Task WCET
 #define PRD_MOUSE		50	// Task period
 #define DL_MOUSE		50	// Task deadline
 #define PRIO_MOUSE		20	// Task priority

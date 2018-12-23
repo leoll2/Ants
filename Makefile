@@ -7,44 +7,32 @@ MATH = -lm
 
 .PHONY: all clean
 
-all: main
+all: bin/main
 
 clean:
-	rm -f bin/*
-	rm -f build/*
+	rm -f bin/* build/*
+	rmdir bin/ build/
 
 
 ################
 # Object files #
 ################
 
-build/ant.o: src/ant.c src/ant.h
-	$(CC) -c $(CONF) src/ant.c -o build/ant.o
-
-build/field.o: src/field.c src/field.h
-	$(CC) -c $(CONF) src/field.c -o build/field.o
-
 build/main.o: src/main.c
-	$(CC) -c $(CONF) src/main.c -o build/main.o
+	mkdir -p build/
+	$(CC) -c $(CONF) $< -o $@
 
-build/multimedia.o: src/multimedia.c src/multimedia.h
-	$(CC) -c $(CONF) src/multimedia.c -o build/multimedia.o
-
-build/rt_thread.o: src/rt_thread.c src/rt_thread.h
-	$(CC) -c $(CONF) src/rt_thread.c -o build/rt_thread.o
+build/%.o: src/%.c src/%.h
+	mkdir -p build/
+	$(CC) -c $(CONF) $< -o $@
 
 
 ################
 # Executables  #
 ################
 
-main: build/main.o build/ant.o build/field.o build/multimedia.o build/rt_thread.o
-	$(CC) \
-	build/main.o \
-	build/ant.o \
-	build/field.o \
-	build/multimedia.o \
-	build/rt_thread.o \
-	-o bin/main $(ALLEG) $(PTHREAD) $(MATH)
+bin/main: build/main.o build/ant.o build/field.o build/multimedia.o build/rt_thread.o
+	mkdir -p bin/
+	$(CC) $^ -o $@ $(ALLEG) $(PTHREAD) $(MATH)
 
 

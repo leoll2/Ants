@@ -261,7 +261,7 @@ int spawn_ant(void) {
 
 	pthread_mutex_lock(&ants[a_id].mtx);	// prevents the ant from running before initialization
 
-	t_id = start_thread(ant_routine, &ants[a_id], SCHED_FIFO, WCET_ANTS, PRD_ANTS, DL_ANTS, PRIO_ANTS);
+	t_id = start_thread(ant_routine, &ants[a_id], SCHED_FIFO, PRD_ANTS, DL_ANTS, PRIO_ANTS);
 	if (t_id < 0) {
 		pthread_mutex_unlock(&ants[a_id].mtx);
 		deallocate_ant_id(a_id);

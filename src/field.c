@@ -229,7 +229,7 @@ unsigned int start_pheromones(void) {
 		}
 	}
 
-	tid = start_thread(evapor_behaviour, NULL, SCHED_FIFO, WCET_EVAPOR, PRD_EVAPOR, DL_EVAPOR, PRIO_EVAPOR);
+	tid = start_thread(evapor_behaviour, NULL, SCHED_FIFO, PRD_EVAPOR, DL_EVAPOR, PRIO_EVAPOR);
 	if (tid < 0) {
 		printf("Failed to start pheromones evaporation thread\n");
 		return 1;

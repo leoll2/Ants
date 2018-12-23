@@ -15,7 +15,6 @@ typedef struct task_par {
 	pthread_t tid;		// thread id
 	void *(*behaviour)(void *);	// behaviour code
 	void *data;			// behaviour-specific data
-	long wcet; 			// worst case execution time (us)
 	int period; 		// period (ms)
 	int deadline; 		// relative deadline (ms)
 	int priority; 		// priority [0,99]
@@ -32,7 +31,6 @@ int start_thread(
 		void *(*func)(void *), // routine code
 		void *args,		// routine args
 		int policy,		// scheduling policy
-		long wcet,		// worst case execution time (us)
 		int prd,		// period (ms)
 		int dl,			// relative deadline (ms)
 		int prio 		// priority [0,99]
