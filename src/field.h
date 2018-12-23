@@ -8,39 +8,39 @@
 typedef enum fragrance {HOME, FOOD} 	fragrance;
 typedef enum scan_mode  {FULL, FORWARD} scan_mode;
 
-#define PH_SIZE_H 		(FIELD_WIDTH  / CELL_SIZE)
-#define PH_SIZE_V		(FIELD_HEIGHT / CELL_SIZE)
+#define PH_SIZE_H 	(FIELD_WIDTH  / CELL_SIZE)
+#define PH_SIZE_V	(FIELD_HEIGHT / CELL_SIZE)
 
 
 
 typedef struct food {
-	int x;
-	int y;
-	unsigned int units;
+	int 		x;
+	int 		y;
+	unsigned int 	units;
 	pthread_mutex_t mtx;
 } food;
 
 typedef struct cell {
-	float 			food;			// food scent intensity
-	float 			home;			// anthill scent intensity
+	float 		food;		// food scent intensity
+	float 		home;		// anthill scent intensity
 	unsigned int 	backoff_food;	// cooldown before food pheromone can be dropped
 	unsigned int 	backoff_home;	// cooldown before food pheromone can be dropped 
 	pthread_mutex_t mtx;
 } cell;
 
 typedef struct visual_scan {
-	bool 			success;		// desired object detected
-	int 			target_x;		// [pixel] target x
-	int 			target_y;		// [pixel] target y
-	bool			oth_obj_found; 	// any other object detected
+	bool 		success;	// desired object detected
+	int 		target_x;	// [pixel] target x
+	int 		target_y;	// [pixel] target y
+	bool		oth_obj_found; 	// any other object detected
 } visual_scan;
 
 typedef struct smell_scan {
-	bool 			success;		// any pheromone detected nearby?
-	bool 			local_optimum;	// is the ant already in the cell with the strongest smell?
-	int 			opt_x;			// [pixel] optimal x
-	int 			opt_y;			// [pixel] optimal y
-	float 			opt_val;		// pheromone value in optimal (x,y)
+	bool 		success;	// any pheromone detected nearby?
+	bool 		local_optimum;	// is the ant already in the cell with the strongest smell?
+	int 		opt_x;		// [pixel] optimal x
+	int 		opt_y;		// [pixel] optimal y
+	float 		opt_val;	// pheromone value in optimal (x,y)
 } smell_scan;
 
 extern cell ph[PH_SIZE_H][PH_SIZE_V];
