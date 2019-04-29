@@ -12,7 +12,7 @@ This application requires Allegro4 to run. The suggested way to install is:
 
 ## Download
 
-`git clone https://https://github.com/leoll2/Ants.git`
+`git clone https://www.github.com/leoll2/Ants.git`
 
 ## Compile
 
